@@ -5,17 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ניהול כלכלי משפחת טולדנו</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- PDF generation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
-  <!-- Loading overlay -->
   <div id="app-loader" class="app-loader">
     <div class="loader-box">
       <div class="loader-spinner"></div>
@@ -23,11 +17,7 @@
     </div>
   </div>
 
-  <!-- Balloon canvas layer -->
-  <canvas id="balloon-canvas" aria-hidden="true"></canvas>
-
-  <!-- Dark Mode Toggle -->
-  <button id="dark-mode-btn" class="dark-mode-btn" title="מצב לילה / יום" aria-label="החלף מצב תאורה">🌙</button>
+  <button id="dark-mode-btn" class="dark-mode-btn" title="מצב לילה / יום">🌙</button>
 
   <header>
     <div class="header-inner">
@@ -40,79 +30,52 @@
   </header>
 
   <main>
-
-    <!-- Summary Cards -->
     <section class="summary-grid">
       <div class="card income-card">
         <span class="card-icon income-arrow">▲</span>
         <div class="card-content">
           <h3>סך הכנסות</h3>
-          <p id="total-income">₪0.00</p>
+          <p id="total-income">₪0</p>
         </div>
       </div>
       <div class="card expense-card">
         <span class="card-icon expense-arrow">▼</span>
         <div class="card-content">
           <h3>סך הוצאות</h3>
-          <p id="total-expenses">₪0.00</p>
+          <p id="total-expenses">₪0</p>
         </div>
       </div>
       <div class="card balance-card">
         <span class="card-icon balance-sym">₪</span>
         <div class="card-content">
           <h3>יתרה</h3>
-          <p id="balance">₪0.00</p>
+          <p id="balance">₪0</p>
         </div>
       </div>
     </section>
 
-    <!-- Budget Goal Section -->
-    <section class="budget-section wood-panel">
-      <h2>🎯 יעד תקציב חודשי</h2>
-      <div class="budget-input-row">
-        <label for="budget-input">יעד חודשי (₪):</label>
-        <input type="number" id="budget-input" placeholder="לדוגמה: 5000" min="1" />
-        <button type="button" id="save-budget-btn" class="btn-add-sm">שמור יעד</button>
-      </div>
-      <div class="budget-bar-wrap" id="budget-bar-wrap">
-        <div class="budget-bar-labels">
-          <span id="budget-spent-label">₪0 הוצאו</span>
-          <span id="budget-status-msg"></span>
-          <span id="budget-pct-label">0%</span>
-        </div>
-        <div class="budget-track">
-          <div class="budget-fill" id="budget-fill"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Add Transaction Form -->
     <section class="form-section wood-panel">
       <h2>✏️ הוסף תנועה חדשה</h2>
       <form id="transaction-form">
         <div class="form-grid">
           <div class="form-group">
-            <label for="transaction-name">שם / תיאור</label>
-            <input type="text" id="transaction-name" placeholder="לדוגמה: משכורת, קניות..." required />
+            <label for="transaction-name">תיאור</label>
+            <input type="text" id="transaction-name" placeholder="לדוגמה: משכורת" required />
           </div>
           <div class="form-group">
             <label for="transaction-amount">סכום (₪)</label>
-            <input type="number" id="transaction-amount" placeholder="0.00" min="0.01" step="0.01" required />
+            <input type="number" id="transaction-amount" placeholder="0.00" step="0.01" required />
           </div>
           <div class="form-group">
             <label for="transaction-category">קטגוריה</label>
-            <div class="category-row">
-              <select id="transaction-category"></select>
-              <button type="button" id="add-category-btn" class="btn-icon" title="ניהול קטגוריות">🏷️</button>
-            </div>
+            <select id="transaction-category"></select>
           </div>
         </div>
-        <!-- Type Toggle Buttons -->
         <div class="type-toggle-row">
-          <button type="button" class="type-btn expense-btn active" id="type-btn-expense" data-type="expense">
+          <button type="button" class="type-btn expense-btn active" id="type-btn-expense">
             <span class="type-arrow">↓</span> הוצאה
           </button>
-          <button type="button" class="type-btn income-btn" id="type-btn-income" data-type="income">
+          <button type="button" class="type-btn income-btn" id="type-btn-income">
             <span class="type-arrow">↑</span> הכנסה
           </button>
         </div>
@@ -120,55 +83,23 @@
       </form>
     </section>
 
-    <!-- Category Manager Modal -->
-    <div id="category-modal" class="modal-overlay" role="dialog" aria-modal="true">
-      <div class="modal-box wood-panel">
-        <div class="modal-header">
-          <h3>🏷️ ניהול קטגוריות</h3>
-          <button id="modal-close" class="btn-icon-close" title="סגור">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="modal-input-row">
-            <input type="text" id="new-category-input" placeholder="שם קטגוריה חדשה..." maxlength="40" />
-            <button type="button" id="save-category-btn" class="btn-add-sm">הוסף</button>
-          </div>
-          <ul id="category-list"></ul>
-          <div class="modal-footer">
-            <button type="button" id="reset-categories-btn" class="btn-reset-cats" title="מחק קטגוריות מותאמות אישית ואפס לברירת מחדל">&#x21BA; אפס לברירת מחדל</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Expense Pie Chart -->
-    <section class="chart-section wood-panel" id="chart-section">
-      <h2>🍾 פילוח הוצאות לפי קטגוריה</h2>
+    <section class="chart-section wood-panel">
+      <h2>📊 פילוח הוצאות</h2>
       <div class="chart-wrap">
         <canvas id="pie-chart"></canvas>
       </div>
-      <p id="chart-empty-msg" class="chart-empty">אין הוצאות להצגה עדיין</p>
+      <p id="chart-empty-msg" class="chart-empty">אין נתונים להצגה</p>
     </section>
 
-    <!-- Transactions Table -->
     <section class="table-section wood-panel">
-      <div class="table-header">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h2>📋 היסטוריית תנועות</h2>
-        <button id="clear-all-btn" class="btn-clear" title="מחק את כל התנועות">🗑️ נקה הכל</button>
+        <button id="export-excel-btn" class="btn-add-sm" style="background: #1D6F42; border-color: #155231;">📊 ייצוא לאקסל</button>
       </div>
-
-      <!-- Data Tools: Export / Import -->
-      <div class="data-tools">
-        <button id="export-csv-btn" class="btn-tool btn-csv" title="ייצוא לאקסל CSV">📊 ייצוא CSV</button>
-        <button id="export-pdf-btn" class="btn-tool btn-pdf" title="ייצוא לדוח PDF">🖨️ ייצוא PDF</button>
-        <label for="import-file" class="btn-tool btn-import" title="ייבוא נתונים מקובץ JSON">📂 ייבוא נתונים</label>
-        <input type="file" id="import-file" accept=".json" style="display:none" />
-      </div>
-
       <div class="table-wrapper">
-        <table id="transactions-table">
+        <table>
           <thead>
             <tr>
-              <th>#</th>
               <th>תיאור</th>
               <th>קטגוריה</th>
               <th>סוג</th>
@@ -177,21 +108,17 @@
               <th>פעולה</th>
             </tr>
           </thead>
-          <tbody id="transactions-body">
-            <!-- Rows injected by JS -->
-          </tbody>
+          <tbody id="transactions-body"></tbody>
         </table>
         <div id="empty-state" class="empty-state">
-          <span>&#x1F4CB;</span>
-          <p>אין עדיין תנועות. הוסף את הראשונה!</p>
+          <p>אין תנועות כרגע</p>
         </div>
       </div>
     </section>
-
   </main>
 
   <footer>
-    <p>ניהול כלכלי משפחת טולדנו &copy; 2026 &nbsp;|&nbsp; 💎 כל הזכויות שמורות</p>
+    <p>ניהול כלכלי משפחת טולדנו &copy; 2026</p>
   </footer>
 
   <script type="module" src="app.js"></script>

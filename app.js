@@ -17,51 +17,54 @@ const transactionsCol = collection(db, "transactions");
 
 let currentType = 'expense';
 let myChart = null;
+let allData = []; // נשמור את הנתונים כאן לייצוא
 
-// --- חיבור כפתורי ה-Puffy מהעיצוב החדש ---
+// --- קטגוריות ---
+const categories = ["מזון", "בית", "חינוך", "פנאי", "רכב", "בריאות", "משכורת", "אחר"];
+const categorySelect = document.getElementById('transaction-category');
+categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat; opt.innerText = cat;
+    categorySelect.appendChild(opt);
+});
+
+// --- כפתורי סוג ---
 const btnExpense = document.getElementById('type-btn-expense');
 const btnIncome = document.getElementById('type-btn-income');
 
-btnExpense.onclick = () => {
-    currentType = 'expense';
-    btnExpense.classList.add('active');
-    btnIncome.classList.remove('active');
+btnExpense.onclick = () => { currentType = 'expense'; btnExpense.classList.add('active'); btnIncome.classList.remove('active'); };
+btnIncome.onclick = () => { currentType = 'income'; btnIncome.classList.add('active'); btnExpense.classList.remove('active'); };
+
+// --- מצב לילה ---
+const darkModeBtn = document.getElementById('dark-mode-btn');
+darkModeBtn.onclick = () => {
+    document.body.classList.toggle('dark-mode');
+    darkModeBtn.innerText = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
 };
 
-btnIncome.onclick = () => {
-    currentType = 'income';
-    btnIncome.classList.add('active');
-    btnExpense.classList.remove('active');
-};
-
-// --- הוספת תנועה לענן ---
+// --- הוספה לענן ---
 document.getElementById('transaction-form').onsubmit = async (e) => {
     e.preventDefault();
     const nameInput = document.getElementById('transaction-name');
     const amountInput = document.getElementById('transaction-amount');
     const categoryInput = document.getElementById('transaction-category');
 
-    if (nameInput.value && amountInput.value) {
-        await addDoc(transactionsCol, {
-            description: nameInput.value,
-            amount: parseFloat(amountInput.value),
-            category: categoryInput.value || "כללי",
-            type: currentType,
-            date: Date.now()
-        });
-        nameInput.value = '';
-        amountInput.value = '';
-    }
+    await addDoc(transactionsCol, {
+        description: nameInput.value,
+        amount: parseFloat(amountInput.value),
+        category: categoryInput.value,
+        type: currentType,
+        date: Date.now()
+    });
+    nameInput.value = ''; amountInput.value = '';
 };
 
-// --- האזנה לנתונים והעלמת מסך הטעינה ---
+// --- האזנה לענן ---
 onSnapshot(query(transactionsCol, orderBy("date", "desc")), (snapshot) => {
-    const transactions = [];
-    snapshot.forEach(doc => transactions.push({ id: doc.id, ...doc.data() }));
-    
-    // הסתרת מסך הטעינה ברגע שהנתונים מגיעים
+    allData = [];
+    snapshot.forEach(doc => allData.push({ id: doc.id, ...doc.data() }));
     document.getElementById('app-loader').classList.add('hidden');
-    renderUI(transactions);
+    renderUI(allData);
 });
 
 function renderUI(data) {
@@ -70,73 +73,64 @@ function renderUI(data) {
     let inc = 0, exp = 0;
     const catTotals = {};
 
-    data.forEach((t, index) => {
+    data.forEach(t => {
         if (t.type === 'income') inc += t.amount;
-        else {
-            exp += t.amount;
-            catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
-        }
+        else { exp += t.amount; catTotals[t.category] = (catTotals[t.category] || 0) + t.amount; }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${index + 1}</td>
             <td>${t.description}</td>
             <td><span class="badge">${t.category}</span></td>
             <td><span class="badge ${t.type === 'income' ? 'badge-income' : 'badge-expense'}">${t.type === 'income' ? '↑ הכנסה' : '↓ הוצאה'}</span></td>
-            <td class="${t.type === 'income' ? 'amount-income' : 'amount-expense'}">₪${t.amount.toLocaleString()}</td>
-            <td class="date-cell">${new Date(t.date).toLocaleDateString('he-IL')}</td>
+            <td style="font-weight:bold; color:${t.type === 'income' ? '#3a7a40' : '#c04828'}">₪${t.amount.toLocaleString()}</td>
+            <td>${new Date(t.date).toLocaleDateString('he-IL')}</td>
             <td><button class="btn-delete" onclick="deleteTransaction('${t.id}')">🗑️</button></td>
         `;
         tbody.appendChild(tr);
     });
 
-    // עדכון כרטיסיות סיכום
     document.getElementById('total-income').innerText = `₪${inc.toLocaleString()}`;
     document.getElementById('total-expenses').innerText = `₪${exp.toLocaleString()}`;
     document.getElementById('balance').innerText = `₪${(inc - exp).toLocaleString()}`;
-    
-    // הסתרת/הצגת הודעת "אין נתונים"
-    document.getElementById('empty-state').style.display = data.length ? 'none' : 'flex';
-
+    document.getElementById('empty-state').style.display = data.length ? 'none' : 'block';
     updateChart(catTotals);
 }
 
-// --- מצב לילה ---
-const darkModeBtn = document.getElementById('dark-mode-btn');
-if (localStorage.getItem('darkMode') === 'on') {
-    document.body.classList.add('dark-mode');
-    darkModeBtn.textContent = '☀️';
-}
-darkModeBtn.addEventListener('click', () => {
-    const isDark = document.body.classList.toggle('dark-mode');
-    darkModeBtn.textContent = isDark ? '☀️' : '🌙';
-    localStorage.setItem('darkMode', isDark ? 'on' : 'off');
-});
-
-// פונקציית מחיקה גלובלית
 window.deleteTransaction = async (id) => {
-    if(confirm("למחוק תנועה זו?")) {
-        await deleteDoc(doc(db, "transactions", id));
-    }
+    if (confirm("למחוק?")) await deleteDoc(doc(db, "transactions", id));
+};
+
+// --- פונקציית ייצוא לאקסל ---
+document.getElementById('export-excel-btn').onclick = () => {
+    if (allData.length === 0) return alert("אין נתונים לייצוא");
+
+    // הכנת הנתונים לפורמט של אקסל
+    const excelRows = allData.map(t => ({
+        "תיאור": t.description,
+        "קטגוריה": t.category,
+        "סוג": t.type === 'income' ? 'הכנסה' : 'הוצאה',
+        "סכום": t.amount,
+        "תאריך": new Date(t.date).toLocaleDateString('he-IL')
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "תנועות");
+
+    // הורדת הקובץ
+    XLSX.writeFile(workbook, `דוח_משפחת_טולדנו_${new Date().toLocaleDateString('he-IL')}.xlsx`);
 };
 
 function updateChart(totals) {
     const ctx = document.getElementById('pie-chart').getContext('2d');
     if (myChart) myChart.destroy();
-    if (Object.keys(totals).length === 0) {
-        document.getElementById('chart-empty-msg').style.display = 'block';
-        return;
-    }
+    if (Object.keys(totals).length === 0) { document.getElementById('chart-empty-msg').style.display = 'block'; return; }
     document.getElementById('chart-empty-msg').style.display = 'none';
     myChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: Object.keys(totals),
-            datasets: [{
-                data: Object.values(totals),
-                backgroundColor: ['#FFB7B2', '#B2E2F2', '#B2F2BB', '#F2E2B2', '#D9B2F2']
-            }]
-        },
-        options: { plugins: { legend: { position: 'bottom' } } }
+            datasets: [{ data: Object.values(totals), backgroundColor: ['#FFB7B2', '#B2E2F2', '#B2F2BB', '#F2E2B2', '#D9B2F2'] }]
+        }
     });
 }
