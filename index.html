@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ניהול כלכלי משפחת טולדנו</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Balloon canvas layer -->
+  <canvas id="balloon-canvas" aria-hidden="true"></canvas>
+
+  <!-- Dark Mode Toggle -->
+  <button id="dark-mode-btn" class="dark-mode-btn" title="מצב לילה / יום" aria-label="החלף מצב תאורה">🌙</button>
+
+  <header>
+    <div class="header-inner">
+      <div class="header-icon">👨‍👩‍👧‍👦</div>
+      <div>
+        <h1>ניהול כלכלי משפחת טולדנו</h1>
+        <p class="subtitle">מעקב חכם אחר הכנסות והוצאות המשפחה</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Summary Cards -->
+    <section class="summary-grid">
+      <div class="card income-card">
+        <span class="card-icon">⬆️</span>
+        <div class="card-content">
+          <h3>סך הכנסות</h3>
+          <p id="total-income">₪0.00</p>
+        </div>
+      </div>
+      <div class="card expense-card">
+        <span class="card-icon">⬇️</span>
+        <div class="card-content">
+          <h3>סך הוצאות</h3>
+          <p id="total-expenses">₪0.00</p>
+        </div>
+      </div>
+      <div class="card balance-card">
+        <span class="card-icon">⚖️</span>
+        <div class="card-content">
+          <h3>יתרה</h3>
+          <p id="balance">₪0.00</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Add Transaction Form -->
+    <section class="form-section wood-panel">
+      <h2>➕ הוסף תנועה חדשה</h2>
+      <form id="transaction-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="transaction-name">שם / תיאור</label>
+            <input
+              type="text"
+              id="transaction-name"
+              placeholder="לדוגמה: משכורת, קניות..."
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="transaction-amount">סכום (₪)</label>
+            <input
+              type="number"
+              id="transaction-amount"
+              placeholder="0.00"
+              min="0.01"
+              step="0.01"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="transaction-type">סוג תנועה</label>
+            <select id="transaction-type">
+              <option value="income">⬆️ הכנסה</option>
+              <option value="expense">⬇️ הוצאה</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="transaction-category">קטגוריה</label>
+            <div class="category-row">
+              <select id="transaction-category"></select>
+              <button type="button" id="add-category-btn" class="btn-icon" title="ניהול קטגוריות">🏷️</button>
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="btn-add">✦ הוסף תנועה</button>
+      </form>
+    </section>
+
+    <!-- Category Manager Modal -->
+    <div id="category-modal" class="modal-overlay" role="dialog" aria-modal="true">
+      <div class="modal-box wood-panel">
+        <div class="modal-header">
+          <h3>🏷️ ניהול קטגוריות</h3>
+          <button id="modal-close" class="btn-icon-close" title="סגור">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-input-row">
+            <input type="text" id="new-category-input" placeholder="שם קטגוריה חדשה..." maxlength="40" />
+            <button type="button" id="save-category-btn" class="btn-add-sm">הוסף</button>
+          </div>
+          <ul id="category-list"></ul>
+          <div class="modal-footer">
+            <button type="button" id="reset-categories-btn" class="btn-reset-cats" title="מחק קטגוריות מותאמות אישית ואפס לברירת מחדל">&#x21BA; אפס לברירת מחדל</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <section class="table-section wood-panel">
+      <div class="table-header">
+        <h2>📋 היסטוריית תנועות</h2>
+        <button id="clear-all-btn" class="btn-clear" title="מחק את כל התנועות">🗑️ נקה הכל</button>
+      </div>
+
+      <!-- Data Tools: Export / Import -->
+      <div class="data-tools">
+        <button id="export-csv-btn" class="btn-tool btn-csv" title="ייצוא לאקסל CSV">📊 ייצוא CSV</button>
+        <button id="export-pdf-btn" class="btn-tool btn-pdf" title="ייצוא לדוח PDF">🖨️ ייצוא PDF</button>
+        <label for="import-file" class="btn-tool btn-import" title="ייבוא נתונים מקובץ JSON">📂 ייבוא נתונים</label>
+        <input type="file" id="import-file" accept=".json" style="display:none" />
+      </div>
+
+      <div class="table-wrapper">
+        <table id="transactions-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>תיאור</th>
+              <th>קטגוריה</th>
+              <th>סוג</th>
+              <th>סכום</th>
+              <th>תאריך</th>
+              <th>פעולה</th>
+            </tr>
+          </thead>
+          <tbody id="transactions-body">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+        <div id="empty-state" class="empty-state">
+          <span>&#x1F4CB;</span>
+          <p>אין עדיין תנועות. הוסף את הראשונה!</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>ניהול כלכלי משפחת טולדנו &copy; 2026 &nbsp;|&nbsp; 💎 כל הזכויות שמורות</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
