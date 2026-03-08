@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ניהול כלכלי משפחת טולדנו</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Scribble&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -94,7 +99,10 @@
     <section class="table-section wood-panel">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h2>📋 היסטוריית תנועות</h2>
-        <button id="export-excel-btn" class="btn-add-sm" style="background: #1D6F42; border-color: #155231;">📊 ייצוא לאקסל</button>
+        <div style="display:flex;gap:0.5rem;">
+          <button id="export-pdf-btn" class="btn-add-sm" style="background: #c04828; border-color: #a03018;">📄 ייצוא ל-PDF</button>
+          <button id="export-excel-btn" class="btn-add-sm" style="background: #1D6F42; border-color: #155231;">📊 ייצוא לאקסל</button>
+        </div>
       </div>
       <div class="table-wrapper">
         <table>

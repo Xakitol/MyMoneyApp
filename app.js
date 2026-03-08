@@ -100,6 +100,26 @@ window.deleteTransaction = async (id) => {
     if (confirm("למחוק?")) await deleteDoc(doc(db, "transactions", id));
 };
 
+// --- פונקציית ייצוא ל-PDF ---
+document.getElementById('export-pdf-btn').onclick = async () => {
+    if (allData.length === 0) return alert("אין נתונים לייצוא");
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const mainEl = document.querySelector('main');
+    const canvas = await html2canvas(mainEl, { scale: 1.5, useCORS: true, backgroundColor: '#f2e8d8' });
+    const imgData = canvas.toDataURL('image/jpeg', 0.90);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+    let y = 0;
+    while (y < imgHeight) {
+        pdf.addImage(imgData, 'JPEG', 0, -y, pdfWidth, imgHeight);
+        y += pdfHeight;
+        if (y < imgHeight) pdf.addPage();
+    }
+    pdf.save(`דוח_משפחת_טולדנו_${new Date().toLocaleDateString('he-IL')}.pdf`);
+};
+
 // --- פונקציית ייצוא לאקסל ---
 document.getElementById('export-excel-btn').onclick = () => {
     if (allData.length === 0) return alert("אין נתונים לייצוא");
