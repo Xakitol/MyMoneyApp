@@ -142,8 +142,8 @@ td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
     cursor: pointer; font-weight: bold; 
     font-family: 'Rubik Scribble', cursive; font-size: 1rem;
 }
-.btn-pdf { background: #d32f2f; }
-.btn-excel { background: #2e7d32; }
+.btn-pdf { background: #c75a56; }
+.btn-excel { background: #7ab87c; }
 
 .app-loader { position: fixed; inset: 0; background: var(--bg-creme); display: flex; align-items: center; justify-content: center; z-index: 2000; }
 .app-loader.hidden { display: none; }
