@@ -1,5 +1,5 @@
 ﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDK3oq5I-MHnjYGXkRBfUeYs3vw7zwB0gE",
@@ -18,6 +18,7 @@ const transactionsCol = collection(db, "transactions");
 let currentType = 'expense';
 let allData = [];
 let myChart = null;
+let editId = null; // משתנה למצב עריכה
 
 function populateMonths() {
     const months = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
@@ -51,14 +52,30 @@ document.getElementById('type-btn-income').onclick = function() {
 
 document.getElementById('transaction-form').onsubmit = async (e) => {
     e.preventDefault();
-    await addDoc(transactionsCol, {
+    
+    const transactionData = {
         description: document.getElementById('transaction-name').value,
         amount: parseFloat(document.getElementById('transaction-amount').value),
         category: document.getElementById('transaction-category').value,
         type: currentType,
-        date: Date.now()
-    });
+        recurring: document.getElementById('transaction-recurring').checked,
+        date: editId ? allData.find(t => t.id === editId).date : Date.now()
+    };
+
+    if (editId) {
+        // עדכון תנועה קיימת
+        await updateDoc(doc(db, "transactions", editId), transactionData);
+        editId = null;
+        document.querySelector('.btn-add').innerText = "הוסף תנועה";
+    } else {
+        // הוספה חדשה
+        await addDoc(transactionsCol, transactionData);
+    }
+
     e.target.reset();
+    currentType = 'expense';
+    document.getElementById('type-btn-expense').classList.add('active');
+    document.getElementById('type-btn-income').classList.remove('active');
 };
 
 onSnapshot(query(transactionsCol, orderBy("date", "desc")), (snapshot) => {
@@ -93,12 +110,15 @@ function renderUI(data) {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${t.description}</td>
+            <td>${t.description} ${t.recurring ? '🔄' : ''}</td>
             <td>${t.category}</td>
             <td style="color:${t.type === 'income' ? 'green' : 'red'}">${t.type === 'income' ? '↑' : '↓'}</td>
             <td style="font-weight:bold">₪${t.amount.toLocaleString()}</td>
             <td>${new Date(t.date).toLocaleDateString('he-IL')}</td>
-            <td><button onclick="deleteTransaction('${t.id}')">🗑️</button></td>
+            <td>
+                <button onclick="editTransaction('${t.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">📝</button>
+                <button onclick="deleteTransaction('${t.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">🗑️</button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -112,6 +132,33 @@ function renderUI(data) {
     updateSavingTarget(balance);
 }
 
+window.editTransaction = (id) => {
+    const t = allData.find(item => item.id === id);
+    if (!t) return;
+
+    document.getElementById('transaction-name').value = t.description;
+    document.getElementById('transaction-amount').value = t.amount;
+    document.getElementById('transaction-category').value = t.category;
+    document.getElementById('transaction-recurring').checked = t.recurring || false;
+    
+    currentType = t.type;
+    if (currentType === 'income') {
+        document.getElementById('type-btn-income').classList.add('active');
+        document.getElementById('type-btn-expense').classList.remove('active');
+    } else {
+        document.getElementById('type-btn-expense').classList.add('active');
+        document.getElementById('type-btn-income').classList.remove('active');
+    }
+
+    editId = id;
+    document.querySelector('.btn-add').innerText = "עדכן תנועה";
+    window.scrollTo({ top: 150, behavior: 'smooth' }); 
+};
+
+window.deleteTransaction = async (id) => {
+    if(confirm("למחוק?")) await deleteDoc(doc(db, "transactions", id));
+};
+
 function updateSavingTarget(balance) {
     const target = 2500;
     const pct = Math.min(Math.max((balance / target) * 100, 0), 100);
@@ -119,10 +166,6 @@ function updateSavingTarget(balance) {
     document.getElementById('target-percentage').innerText = Math.round(pct) + "%";
     document.getElementById('target-message').innerText = balance >= target ? "הגעתם ליעד! 🏆" : "ממשיכים לחסוך...";
 }
-
-window.deleteTransaction = async (id) => {
-    if(confirm("למחוק?")) await deleteDoc(doc(db, "transactions", id));
-};
 
 function updateChart(totals) {
     const ctx = document.getElementById('pie-chart').getContext('2d');
