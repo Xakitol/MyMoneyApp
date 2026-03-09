@@ -112,18 +112,19 @@ input, select { padding: 12px; border-radius: 12px; border: 1px solid var(--acce
     align-items: center;
     cursor: pointer;
     font-family: 'Rubik Scribble', cursive;
-    font-size: 1.1rem;
-    color: var(--primary-brown);
+    font-size: 1.3rem; /* הגדלתי מעט את הפונט */
+    color: var(--primary-brown); /* שימוש בחום הכהה והבולט */
+    font-weight: bold; /* הוספת עובי לכתב המצויר */
+    text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5); /* צל לבן עדין מאחור להבלטה */
 }
 
 .checkbox-container input {
-    margin-left: 10px;
+    margin-left: 12px;
     cursor: pointer;
-    width: 18px;
-    height: 18px;
-    accent-color: var(--primary-brown);
+    width: 20px; /* תיבה מעט גדולה יותר */
+    height: 20px;
+    accent-color: var(--primary-brown); /* צבע ה-V בתוך התיבה */
 }
-
 .btn-add { 
     background: #8d6e63; color: white; border: none; padding: 15px; border-radius: 12px; 
     width: 100%; font-size: 1.4rem; cursor: pointer; 
