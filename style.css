@@ -1,8 +1,8 @@
 :root {
-    --primary-brown: #5d4037;
+    --primary-brown: #8d7465;
     --bg-creme: #f2e8d8;
     --panel-bg: #fdf5e6;
-    --text-dark: #3e2723;
+    --text-dark: #74625f;
     --accent: #d2b48c;
 }
 
@@ -81,8 +81,8 @@ main {
     text-align: center; 
 }
 
-.income-card p { color: #2e7d32; font-size: 1.8rem; font-weight: bold; }
-.expense-card p { color: #c62828; font-size: 1.8rem; font-weight: bold; }
+.income-card p { color: #7ab87c; font-size: 1.8rem; font-weight: bold; }
+.expense-card p { color: #c75a56; font-size: 1.8rem; font-weight: bold; }
 .balance-card p { color: var(--primary-brown); font-size: 1.8rem; font-weight: bold; }
 
 .progress-bar-bg { background: #e0d5c1; border-radius: 20px; height: 25px; border: 1px solid var(--accent); overflow: hidden; }
@@ -97,8 +97,8 @@ input, select { padding: 12px; border-radius: 12px; border: 1px solid var(--acce
     cursor: pointer; font-weight: bold; background: white; 
     font-family: 'Rubik Scribble', cursive; font-size: 1.1rem;
 }
-.expense-btn.active { background: #f5a08d; color: white; }
-.income-btn.active { background: #a5d6a7; color: white; }
+.expense-btn.active { background: #c75a56; color: white; }
+.income-btn.active { background: #7ab87c; color: white; }
 
 /* עיצוב רכיב ההוראה הקבועה */
 .recurring-row {
