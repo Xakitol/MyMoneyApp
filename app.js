@@ -17,7 +17,7 @@ const transactionsCol = collection(db, "transactions");
 
 let currentType = 'expense';
 let myChart = null;
-let allData = []; // נשמור את הנתונים כאן לייצוא
+let allData = [];
 
 // --- קטגוריות ---
 const categories = ["מזון", "בית", "חינוך", "פנאי", "רכב", "בריאות", "משכורת", "אחר"];
@@ -75,7 +75,10 @@ function renderUI(data) {
 
     data.forEach(t => {
         if (t.type === 'income') inc += t.amount;
-        else { exp += t.amount; catTotals[t.category] = (catTotals[t.category] || 0) + t.amount; }
+        else { 
+            exp += t.amount; 
+            catTotals[t.category] = (catTotals[t.category] || 0) + t.amount; 
+        }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -91,16 +94,44 @@ function renderUI(data) {
 
     document.getElementById('total-income').innerText = `₪${inc.toLocaleString()}`;
     document.getElementById('total-expenses').innerText = `₪${exp.toLocaleString()}`;
-    document.getElementById('balance').innerText = `₪${(inc - exp).toLocaleString()}`;
+    const balance = inc - exp;
+    document.getElementById('balance').innerText = `₪${balance.toLocaleString()}`;
+    
     document.getElementById('empty-state').style.display = data.length ? 'none' : 'block';
+    
     updateChart(catTotals);
+    updateSavingTarget(balance); // הפעלת חישוב יעד החיסכון
+}
+
+// פונקציית יעד החיסכון החדשה
+function updateSavingTarget(balance) {
+    const savingTarget = 8000; // היעד שלכם
+    const percentage = Math.min(Math.max((balance / savingTarget) * 100, 0), 100);
+    
+    const progressFill = document.getElementById('target-progress-fill');
+    const targetPercentText = document.getElementById('target-percentage');
+    const targetMsg = document.getElementById('target-message');
+
+    progressFill.style.width = percentage + "%";
+    targetPercentText.innerText = Math.round(percentage) + "%";
+
+    if (balance >= savingTarget) {
+        targetMsg.innerText = "כל הכבוד! הגעתם ליעד החיסכון להשקעה! 🏆";
+        targetMsg.style.color = "#3a7a40";
+    } else if (balance > 0) {
+        targetMsg.innerText = `נשאר לכם עוד ₪${(savingTarget - balance).toLocaleString()} כדי להגיע ליעד.`;
+        targetMsg.style.color = "#666";
+    } else {
+        targetMsg.innerText = "כרגע אין יתרה לחיסכון. צמצמו הוצאות!";
+        targetMsg.style.color = "#c04828";
+    }
 }
 
 window.deleteTransaction = async (id) => {
     if (confirm("למחוק?")) await deleteDoc(doc(db, "transactions", id));
 };
 
-// --- פונקציית ייצוא ל-PDF ---
+// --- ייצוא ל-PDF ו-Excel נשארים ללא שינוי ---
 document.getElementById('export-pdf-btn').onclick = async () => {
     if (allData.length === 0) return alert("אין נתונים לייצוא");
     const { jsPDF } = window.jspdf;
@@ -120,11 +151,8 @@ document.getElementById('export-pdf-btn').onclick = async () => {
     pdf.save(`דוח_משפחת_טולדנו_${new Date().toLocaleDateString('he-IL')}.pdf`);
 };
 
-// --- פונקציית ייצוא לאקסל ---
 document.getElementById('export-excel-btn').onclick = () => {
     if (allData.length === 0) return alert("אין נתונים לייצוא");
-
-    // הכנת הנתונים לפורמט של אקסל
     const excelRows = allData.map(t => ({
         "תיאור": t.description,
         "קטגוריה": t.category,
@@ -132,12 +160,9 @@ document.getElementById('export-excel-btn').onclick = () => {
         "סכום": t.amount,
         "תאריך": new Date(t.date).toLocaleDateString('he-IL')
     }));
-
     const worksheet = XLSX.utils.json_to_sheet(excelRows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "תנועות");
-
-    // הורדת הקובץ
     XLSX.writeFile(workbook, `דוח_משפחת_טולדנו_${new Date().toLocaleDateString('he-IL')}.xlsx`);
 };
 
