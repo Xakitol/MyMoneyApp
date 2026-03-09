@@ -935,4 +935,19 @@ body.dark-mode .btn-clear   { background: linear-gradient(135deg,#583020,#401808
 body.dark-mode .progress-bar-bg {
     background: #333;
     border-color: #444;
+}.month-select {
+    background: #fdf5e6;
+    border: 2px solid #d2b48c;
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-family: inherit;
+    font-weight: bold;
+    color: #5d4037;
+    cursor: pointer;
+}
+
+body.dark-mode .month-select {
+    background: #444;
+    border-color: #666;
+    color: #eee;
 }

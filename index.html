@@ -24,15 +24,20 @@
 
   <button id="dark-mode-btn" class="dark-mode-btn" title="מצב לילה / יום">🌙</button>
 
-  <header>
-    <div class="header-inner">
-      <div class="header-icon">👨‍👩‍👧‍👦</div>
-      <div>
-        <h1>ניהול כלכלי משפחת טולדנו</h1>
-        <p class="subtitle">מעקב חכם אחר הכנסות והוצאות המשפחה</p>
+ <header>
+  <div class="header-inner">
+    <div class="header-icon">👨‍👩‍👧‍👦</div>
+    <div>
+      <h1>ניהול כלכלי משפחת טולדנו</h1>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+        <p class="subtitle" style="margin:0;">צפייה בחודש:</p>
+        <select id="month-filter" class="month-select">
+          <option value="all">הכל מהתחלה</option>
+          </select>
       </div>
     </div>
-  </header>
+  </div>
+</header>
 
   <main>
     <section class="summary-grid">

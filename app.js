@@ -19,6 +19,25 @@ let currentType = 'expense';
 let myChart = null;
 let allData = [];
 
+// --- ניהול חודשים ---
+const monthFilter = document.getElementById('month-filter');
+
+function populateMonths() {
+    const months = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+    const currentMonth = new Date().getMonth();
+    
+    months.forEach((m, index) => {
+        const opt = document.createElement('option');
+        opt.value = index;
+        opt.innerText = m;
+        if (index === currentMonth) opt.selected = true;
+        monthFilter.appendChild(opt);
+    });
+}
+populateMonths();
+
+monthFilter.onchange = () => renderUI(allData);
+
 // --- קטגוריות ---
 const categories = ["מזון", "בית", "חינוך", "פנאי", "רכב", "בריאות", "משכורת", "אחר"];
 const categorySelect = document.getElementById('transaction-category');
@@ -42,7 +61,7 @@ darkModeBtn.onclick = () => {
     darkModeBtn.innerText = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
 };
 
-// --- הוספה לענן ---
+// --- הוספה לענן (נשאר ללא שינוי) ---
 document.getElementById('transaction-form').onsubmit = async (e) => {
     e.preventDefault();
     const nameInput = document.getElementById('transaction-name');
@@ -67,13 +86,22 @@ onSnapshot(query(transactionsCol, orderBy("date", "desc")), (snapshot) => {
     renderUI(allData);
 });
 
+// --- הצגת הנתונים עם סינון חודשי ---
 function renderUI(data) {
+    const selectedMonth = monthFilter.value;
     const tbody = document.getElementById('transactions-body');
     tbody.innerHTML = '';
+    
     let inc = 0, exp = 0;
     const catTotals = {};
 
-    data.forEach(t => {
+    const filteredData = data.filter(t => {
+        if (selectedMonth === "all") return true;
+        const d = new Date(t.date);
+        return d.getMonth() == selectedMonth && d.getFullYear() == new Date().getFullYear();
+    });
+
+    filteredData.forEach(t => {
         if (t.type === 'income') inc += t.amount;
         else { 
             exp += t.amount; 
@@ -97,33 +125,32 @@ function renderUI(data) {
     const balance = inc - exp;
     document.getElementById('balance').innerText = `₪${balance.toLocaleString()}`;
     
-    document.getElementById('empty-state').style.display = data.length ? 'none' : 'block';
+    document.getElementById('empty-state').style.display = filteredData.length ? 'none' : 'block';
     
     updateChart(catTotals);
-    updateSavingTarget(balance); // הפעלת חישוב יעד החיסכון
+    updateSavingTarget(balance);
 }
 
-// פונקציית יעד החיסכון החדשה
 function updateSavingTarget(balance) {
-    const savingTarget = 8000; // היעד שלכם
+    const savingTarget = 2500;
     const percentage = Math.min(Math.max((balance / savingTarget) * 100, 0), 100);
-    
     const progressFill = document.getElementById('target-progress-fill');
     const targetPercentText = document.getElementById('target-percentage');
     const targetMsg = document.getElementById('target-message');
 
-    progressFill.style.width = percentage + "%";
-    targetPercentText.innerText = Math.round(percentage) + "%";
-
-    if (balance >= savingTarget) {
-        targetMsg.innerText = "כל הכבוד! הגעתם ליעד החיסכון להשקעה! 🏆";
-        targetMsg.style.color = "#3a7a40";
-    } else if (balance > 0) {
-        targetMsg.innerText = `נשאר לכם עוד ₪${(savingTarget - balance).toLocaleString()} כדי להגיע ליעד.`;
-        targetMsg.style.color = "#666";
-    } else {
-        targetMsg.innerText = "כרגע אין יתרה לחיסכון. צמצמו הוצאות!";
-        targetMsg.style.color = "#c04828";
+    if(progressFill) {
+        progressFill.style.width = percentage + "%";
+        targetPercentText.innerText = Math.round(percentage) + "%";
+        if (balance >= savingTarget) {
+            targetMsg.innerText = "כל הכבוד! הגעתם ליעד החיסכון להשקעה! 🏆";
+            targetMsg.style.color = "#3a7a40";
+        } else if (balance > 0) {
+            targetMsg.innerText = `נשאר לכם עוד ₪${(savingTarget - balance).toLocaleString()} ליעד.`;
+            targetMsg.style.color = "#666";
+        } else {
+            targetMsg.innerText = "אין יתרה לחיסכון החודש.";
+            targetMsg.style.color = "#c04828";
+        }
     }
 }
 
@@ -131,9 +158,8 @@ window.deleteTransaction = async (id) => {
     if (confirm("למחוק?")) await deleteDoc(doc(db, "transactions", id));
 };
 
-// --- ייצוא ל-PDF ו-Excel נשארים ללא שינוי ---
+// --- ייצוא (מתייחס רק למה שרואים על המסך) ---
 document.getElementById('export-pdf-btn').onclick = async () => {
-    if (allData.length === 0) return alert("אין נתונים לייצוא");
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
     const mainEl = document.querySelector('main');
@@ -148,12 +174,18 @@ document.getElementById('export-pdf-btn').onclick = async () => {
         y += pdfHeight;
         if (y < imgHeight) pdf.addPage();
     }
-    pdf.save(`דוח_משפחת_טולדנו_${new Date().toLocaleDateString('he-IL')}.pdf`);
+    pdf.save(`דוח_טולדנו_חודש_${Number(monthFilter.value)+1}.pdf`);
 };
 
 document.getElementById('export-excel-btn').onclick = () => {
-    if (allData.length === 0) return alert("אין נתונים לייצוא");
-    const excelRows = allData.map(t => ({
+    const selectedMonth = monthFilter.value;
+    const filteredForExcel = allData.filter(t => {
+        if (selectedMonth === "all") return true;
+        const d = new Date(t.date);
+        return d.getMonth() == selectedMonth && d.getFullYear() == new Date().getFullYear();
+    });
+
+    const excelRows = filteredForExcel.map(t => ({
         "תיאור": t.description,
         "קטגוריה": t.category,
         "סוג": t.type === 'income' ? 'הכנסה' : 'הוצאה',
@@ -163,7 +195,7 @@ document.getElementById('export-excel-btn').onclick = () => {
     const worksheet = XLSX.utils.json_to_sheet(excelRows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "תנועות");
-    XLSX.writeFile(workbook, `דוח_משפחת_טולדנו_${new Date().toLocaleDateString('he-IL')}.xlsx`);
+    XLSX.writeFile(workbook, `דוח_טולדנו_חודש_${Number(monthFilter.value)+1}.xlsx`);
 };
 
 function updateChart(totals) {
