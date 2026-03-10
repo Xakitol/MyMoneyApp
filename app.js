@@ -1,6 +1,6 @@
 ﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDK3oq5I-MHnjYGXkRBfUeYs3vw7zwB0gE",
@@ -20,43 +20,76 @@ const transactionsCol = collection(db, "transactions");
 
 const allowedUsers = ["matantoledano18@gmail.com"]; 
 
+// הגדרת Firebase לשמור חיבור רק בתוך ה-Session הנוכחי (נמחק בסגירה)
+setPersistence(auth, browserSessionPersistence);
+
 let currentType = 'expense';
 let allData = [];
 let myChart = null;
 let editId = null;
 let pendingRecurring = [];
 
-// לוגיקת התחברות עם Redirect - מותאם ל-EXE ולדפדפנים פנימיים
+// פונקציית ניהול טיימר - 2 דקות
+function checkSessionTimeout() {
+    const lastActive = localStorage.getItem('lastActiveTime');
+    const now = Date.now();
+    const twoMinutes = 2 * 60 * 1000;
+
+    if (lastActive && (now - lastActive > twoMinutes)) {
+        localStorage.removeItem('lastActiveTime');
+        return true; // הזמן פקע
+    }
+    return false;
+}
+
+// לוגיקת התחברות
 document.getElementById('google-login-btn').onclick = () => {
+    localStorage.setItem('lastActiveTime', Date.now());
     signInWithRedirect(auth, provider);
 };
 
-// בדיקת תוצאת ההתחברות לאחר החזרה מהדף של גוגל
+// בדיקת תוצאת חזרה מהתחברות (Redirect)
 getRedirectResult(auth).then(async (result) => {
     if (result && result.user) {
         if (!allowedUsers.includes(result.user.email)) {
             await signOut(auth);
             document.getElementById('login-error').style.display = 'block';
+        } else {
+            localStorage.setItem('lastActiveTime', Date.now());
         }
     }
 }).catch((error) => {
-    console.error("שגיאה בתהליך ההתחברות:", error);
+    console.error("Auth Error:", error);
 });
 
-// ניהול מצב משתמש
-onAuthStateChanged(auth, (user) => {
+// ניהול מצב משתמש ומניעת "קפיצות"
+onAuthStateChanged(auth, async (user) => {
     const authScreen = document.getElementById('auth-screen');
     const appLoader = document.getElementById('app-loader');
     
-    if (user && allowedUsers.includes(user.email)) {
+    // תמיד נראה את ה-Loader עד שנחליט מה המצב
+    appLoader.classList.remove('hidden');
+
+    const expired = checkSessionTimeout();
+
+    if (user && allowedUsers.includes(user.email) && !expired) {
+        // הכל תקין - נכנסים
         authScreen.classList.add('hidden');
-        appLoader.classList.remove('hidden'); 
+        localStorage.setItem('lastActiveTime', Date.now());
         startApp(); 
     } else {
+        // לא מחובר או פקע הזמן
+        if (expired && user) {
+            await signOut(auth);
+        }
         authScreen.classList.remove('hidden');
-        appLoader.classList.add('hidden');
+        appLoader.classList.add('hidden'); // עכשיו אפשר להראות את כפתור ההתחברות
     }
 });
+
+// עדכון טיימר בפעולות משתמש
+window.addEventListener('mousedown', () => localStorage.setItem('lastActiveTime', Date.now()));
+window.addEventListener('keydown', () => localStorage.setItem('lastActiveTime', Date.now()));
 
 function startApp() {
     populateMonths();
