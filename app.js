@@ -344,5 +344,21 @@ window.sortTable = (key) => {
 
     renderUI(allData); // רינדור מחדש של הטבלה הממוינת
 };
+// לוגיקה לפתיחה וסגירה של מודלים
+window.openModal = (id) => {
+    document.getElementById(id).classList.add('active');
+};
+
+window.closeModal = (id) => {
+    const modal = document.getElementById(id);
+    modal.classList.remove('active');
+};
+
+// חיבור הכפתורים הצפים לפונקציות הפתיחה
+document.getElementById('open-form-btn').onclick = () => openModal('modal-form');
+document.getElementById('open-table-btn').onclick = () => openModal('modal-table');
+
+// סגירת המודל אחרי שמירה מוצלחת (הוסף את זה בתוך ה-submit של הטופס)
+// closeModal('modal-form');
 // הפעלה
 init();

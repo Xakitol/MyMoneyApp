@@ -1,150 +1,99 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ניהול כלכלי משפחת טולדנו</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ניהול הון | משפחת טולדנו</title>
+    <link rel="stylesheet" href="style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-  <div id="auth-screen" class="app-loader hidden">
-    <div class="login-box" style="max-width: 400px; text-align: center; z-index: 3000;">
-      <h2 class="panel-title">כניסה למערכת</h2>
-      <button id="google-login-btn" class="btn-add">התחברות</button>
+    <div id="app-loader" class="app-loader">
+        <div class="loader-box"><p>מתחבר למערכת...</p></div>
     </div>
-  </div>
 
-  <div id="app-loader" class="app-loader">
-    <div class="loader-box">
-      <p>מתחבר למערכת הפיננסית…</p>
+    <header>
+        <h1>משפחת טולדנו | ניהול הון</h1>
+        <div class="month-selector-wrap">
+            <select id="month-filter" class="month-select"></select>
+        </div>
+    </header>
+
+    <main class="dashboard-layout">
+        <section class="summary-grid">
+            <div class="card income-card"><h3>הכנסות</h3><p id="total-income">₪0</p></div>
+            <div class="card expense-card"><h3>הוצאות</h3><p id="total-expenses">₪0</p></div>
+            <div class="card balance-card"><h3>יתרה</h3><p id="balance">₪0</p></div>
+        </section>
+
+        <div class="center-content">
+            <div class="chart-wrap">
+                <canvas id="pie-chart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-form" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('modal-form')">×</span>
+            <h2 class="panel-title">תיעוד תנועה חדשה</h2>
+            <form id="transaction-form">
+                <div class="form-group">
+                    <label>תיאור</label>
+                    <input type="text" id="transaction-name" placeholder="לדוגמה: סופר" list="descriptions-list" required />
+                </div>
+                <div class="form-group">
+                    <label>סכום</label>
+                    <input type="number" id="transaction-amount" step="0.01" required />
+                </div>
+                <div class="form-group">
+                    <label>קטגוריה</label>
+                    <select id="transaction-category"></select>
+                </div>
+                <div class="type-toggle-row">
+                    <button type="button" class="type-btn expense-btn active" id="type-btn-expense">הוצאה</button>
+                    <button type="button" class="type-btn income-btn" id="type-btn-income">הכנסה</button>
+                </div>
+                <button type="submit" class="btn-add">שמור נתונים</button>
+            </form>
+        </div>
     </div>
-  </div>
 
-  <header>
-    <div class="header-inner">
-      <h1>משפחת טולדנו | ניהול הון</h1>
-      <div class="month-selector-wrap">
-        <span>חודש צפייה:</span>
-        <select id="month-filter" class="month-select"></select>
-      </div>
-    </div>
-  </header>
-
-  <main>
-    <div id="recurring-alert" class="wood-panel recurring-alert hidden">
-        <div class="alert-content">
-            <span id="alert-text">נמצאו תנועות קבועות מחודש קודם. לשבץ אותן?</span>
-            <div class="alert-btns">
-                <button id="confirm-recurring" class="btn-confirm">כן, אשר הכל</button>
-                <button id="dismiss-recurring" class="btn-dismiss">לא עכשיו</button>
+    <div id="modal-table" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close-modal" onclick="closeModal('modal-table')">×</span>
+            <div class="modal-header-row" style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>פירוט תנועות</h2>
+                <div class="export-btns">
+                    <button id="export-excel-btn" class="btn-tool">Excel</button>
+                    <button id="export-pdf-btn" class="btn-tool">PDF</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable('description')">תיאור ↕</th>
+                            <th onclick="sortTable('amount')">סכום ↕</th>
+                            <th onclick="sortTable('date')">תאריך ↕</th>
+                            <th>פעולה</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-body"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <section class="summary-grid">
-      <div class="card income-card">
-        <h3>סה"כ הכנסות</h3>
-        <p id="total-income">₪0</p>
-      </div>
-      <div class="card expense-card">
-        <h3>סה"כ הוצאות</h3>
-        <p id="total-expenses">₪0</p>
-      </div>
-      <div class="card balance-card">
-        <h3>יתרה שוטפת</h3>
-        <p id="balance">₪0</p>
-      </div>
-    </section>
+    <div class="floating-controls">
+        <button class="fab btn-list-float" id="open-table-btn">☰</button>
+        <button class="fab btn-add-float" id="open-form-btn">+</button>
+    </div>
 
-    <section id="form-container" class="wood-panel form-section hidden">
-      <h2 class="panel-title">תיעוד תנועה חדשה</h2>
-      <form id="transaction-form">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>תיאור פעולה</label>
-            <input type="text" id="transaction-name" placeholder="הקלד תיאור..." list="descriptions-list" required />
-            <datalist id="descriptions-list"></datalist>
-          </div>
-          <div class="form-group">
-            <label>סכום</label>
-            <input type="number" id="transaction-amount" placeholder="0.00" step="0.01" required />
-          </div>
-          <div class="form-group">
-            <label>קטגוריה</label>
-            <select id="transaction-category"></select>
-          </div>
-        </div>
-        <div class="type-toggle-row">
-          <button type="button" class="type-btn expense-btn active" id="type-btn-expense">↓ הוצאה</button>
-          <button type="button" class="type-btn income-btn" id="type-btn-income">↑ הכנסה</button>
-        </div>
-        <div class="recurring-row">
-          <label class="checkbox-container">
-            <input type="checkbox" id="transaction-recurring">
-            סמן כתנועה קבועה מדי חודש
-          </label>
-        </div>
-        <button type="submit" class="btn-add">שמור נתונים</button>
-      </form>
-    </section>
-
-    <section class="wood-panel budget-targets">
-      <h2 class="panel-title">יעד חיסכון והשקעה</h2>
-      <div class="target-container">
-        <div class="target-info">
-          <span>התקדמות ליעד (2,500 ₪)</span>
-          <span id="target-percentage">0%</span>
-        </div>
-        <div class="progress-bar-bg">
-          <div id="target-progress-fill" class="progress-bar-fill"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="wood-panel chart-section">
-      <h2 class="panel-title">פילוח הוצאות לפי קטגוריה</h2>
-      <div class="chart-wrap">
-        <canvas id="pie-chart"></canvas>
-      </div>
-    </section>
-
-    <section class="wood-panel table-section">
-      <div class="table-header-row">
-        <h2 class="panel-title">פירוט תנועות</h2>
-        <div class="table-controls">
-          <input type="text" id="search-input" placeholder="🔍 חיפוש..." class="search-field">
-          <button id="export-pdf-btn" class="btn-tool btn-pdf">PDF</button>
-          <button id="export-excel-btn" class="btn-tool btn-excel">Excel</button>
-        </div>
-      </div>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th onclick="sortTable('description')" style="cursor:pointer">תיאור ↕</th>
-              <th onclick="sortTable('category')" style="cursor:pointer">קטגוריה ↕</th>
-              <th onclick="sortTable('type')" style="cursor:pointer">סוג ↕</th>
-              <th onclick="sortTable('amount')" style="cursor:pointer">סכום ↕</th>
-              <th onclick="sortTable('date')" style="cursor:pointer">תאריך ↕</th>
-              <th>פעולה</th>
-            </tr>
-          </thead>
-          <tbody id="transactions-body"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <button class="floating-add-btn" id="toggle-form-btn" title="הוספת תנועה חדשה">+</button>
-
-  <script type="module" src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
