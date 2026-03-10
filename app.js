@@ -20,7 +20,7 @@ const transactionsCol = collection(db, "transactions");
 
 const allowedUsers = ["matantoledano18@gmail.com"]; 
 
-// הגדרת Firebase לשמור חיבור רק בתוך ה-Session הנוכחי (נמחק בסגירה)
+// הגדרת Firebase לשכוח את המשתמש ברגע שסוגרים את הדף
 setPersistence(auth, browserSessionPersistence);
 
 let currentType = 'expense';
@@ -35,8 +35,9 @@ function checkSessionTimeout() {
     const now = Date.now();
     const twoMinutes = 2 * 60 * 1000;
 
-    if (lastActive && (now - lastActive > twoMinutes)) {
-        localStorage.removeItem('lastActiveTime');
+    if (!lastActive) return false; // אם אין טיימר, אנחנו נותנים להיכנס (הוא ייווצר בהתחברות)
+
+    if (now - lastActive > twoMinutes) {
         return true; // הזמן פקע
     }
     return false;
@@ -44,6 +45,7 @@ function checkSessionTimeout() {
 
 // לוגיקת התחברות
 document.getElementById('google-login-btn').onclick = () => {
+    // לפני שיוצאים לגוגל, אנחנו מאפסים את הטיימר כדי שלא ניתקע בלופ בחזרה
     localStorage.setItem('lastActiveTime', Date.now());
     signInWithRedirect(auth, provider);
 };
@@ -55,6 +57,7 @@ getRedirectResult(auth).then(async (result) => {
             await signOut(auth);
             document.getElementById('login-error').style.display = 'block';
         } else {
+            // התחברות מוצלחת! מאפסים טיימר לכרגע
             localStorage.setItem('lastActiveTime', Date.now());
         }
     }
@@ -67,29 +70,32 @@ onAuthStateChanged(auth, async (user) => {
     const authScreen = document.getElementById('auth-screen');
     const appLoader = document.getElementById('app-loader');
     
-    // תמיד נראה את ה-Loader עד שנחליט מה המצב
     appLoader.classList.remove('hidden');
 
     const expired = checkSessionTimeout();
 
     if (user && allowedUsers.includes(user.email) && !expired) {
-        // הכל תקין - נכנסים
+        // משתמש מחובר והזמן לא פקע
         authScreen.classList.add('hidden');
         localStorage.setItem('lastActiveTime', Date.now());
         startApp(); 
     } else {
-        // לא מחובר או פקע הזמן
-        if (expired && user) {
+        // ניתוק אם הזמן פקע או שאין משתמש
+        if (user && (expired || !allowedUsers.includes(user.email))) {
             await signOut(auth);
         }
         authScreen.classList.remove('hidden');
-        appLoader.classList.add('hidden'); // עכשיו אפשר להראות את כפתור ההתחברות
+        appLoader.classList.add('hidden');
     }
 });
 
-// עדכון טיימר בפעולות משתמש
-window.addEventListener('mousedown', () => localStorage.setItem('lastActiveTime', Date.now()));
-window.addEventListener('keydown', () => localStorage.setItem('lastActiveTime', Date.now()));
+// עדכון טיימר בפעולות משתמש בתוך האתר
+window.addEventListener('mousedown', () => {
+    if (auth.currentUser) localStorage.setItem('lastActiveTime', Date.now());
+});
+window.addEventListener('keydown', () => {
+    if (auth.currentUser) localStorage.setItem('lastActiveTime', Date.now());
+});
 
 function startApp() {
     populateMonths();
