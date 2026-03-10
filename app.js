@@ -1,6 +1,6 @@
 ﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDK3oq5I-MHnjYGXkRBfUeYs3vw7zwB0gE",
@@ -20,8 +20,8 @@ const transactionsCol = collection(db, "transactions");
 
 const allowedUsers = ["matantoledano18@gmail.com"]; 
 
-// הגדרת Firebase לשכוח את המשתמש ברגע שסוגרים את הדף
-setPersistence(auth, browserSessionPersistence);
+// שימוש ב-Local Persistence כדי שה-Redirect לא יאבד את המשתמש בדרך
+setPersistence(auth, browserLocalPersistence);
 
 let currentType = 'expense';
 let allData = [];
@@ -30,58 +30,53 @@ let editId = null;
 let pendingRecurring = [];
 
 // פונקציית ניהול טיימר - 2 דקות
-function checkSessionTimeout() {
+function isSessionExpired() {
     const lastActive = localStorage.getItem('lastActiveTime');
+    if (!lastActive) return false; 
+
     const now = Date.now();
     const twoMinutes = 2 * 60 * 1000;
-
-    if (!lastActive) return false; // אם אין טיימר, אנחנו נותנים להיכנס (הוא ייווצר בהתחברות)
-
-    if (now - lastActive > twoMinutes) {
-        return true; // הזמן פקע
-    }
-    return false;
+    return (now - lastActive > twoMinutes);
 }
 
 // לוגיקת התחברות
 document.getElementById('google-login-btn').onclick = () => {
-    // לפני שיוצאים לגוגל, אנחנו מאפסים את הטיימר כדי שלא ניתקע בלופ בחזרה
+    // מאפסים טיימר רגע לפני היציאה לגוגל
     localStorage.setItem('lastActiveTime', Date.now());
     signInWithRedirect(auth, provider);
 };
 
-// בדיקת תוצאת חזרה מהתחברות (Redirect)
+// טיפול בחזרה מהתחברות (המפתח לשבירת הלופ)
 getRedirectResult(auth).then(async (result) => {
     if (result && result.user) {
-        if (!allowedUsers.includes(result.user.email)) {
+        if (allowedUsers.includes(result.user.email)) {
+            // התחברנו בהצלחה! קובעים טיימר חדש ומרעננים
+            localStorage.setItem('lastActiveTime', Date.now());
+        } else {
             await signOut(auth);
             document.getElementById('login-error').style.display = 'block';
-        } else {
-            // התחברות מוצלחת! מאפסים טיימר לכרגע
-            localStorage.setItem('lastActiveTime', Date.now());
         }
     }
 }).catch((error) => {
-    console.error("Auth Error:", error);
+    console.error("שגיאה בחזרה מגוגל:", error);
 });
 
-// ניהול מצב משתמש ומניעת "קפיצות"
+// ניהול מצב משתמש
 onAuthStateChanged(auth, async (user) => {
     const authScreen = document.getElementById('auth-screen');
     const appLoader = document.getElementById('app-loader');
     
-    appLoader.classList.remove('hidden');
-
-    const expired = checkSessionTimeout();
+    const expired = isSessionExpired();
 
     if (user && allowedUsers.includes(user.email) && !expired) {
-        // משתמש מחובר והזמן לא פקע
+        // מחובר ותקין
         authScreen.classList.add('hidden');
+        appLoader.classList.remove('hidden'); // מציג "מתחבר לענן" בזמן טעינת הנתונים
         localStorage.setItem('lastActiveTime', Date.now());
         startApp(); 
     } else {
-        // ניתוק אם הזמן פקע או שאין משתמש
-        if (user && (expired || !allowedUsers.includes(user.email))) {
+        // ניתוק אם פקע הזמן או לא מחובר
+        if (user && expired) {
             await signOut(auth);
         }
         authScreen.classList.remove('hidden');
@@ -89,13 +84,12 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// עדכון טיימר בפעולות משתמש בתוך האתר
-window.addEventListener('mousedown', () => {
+// עדכון טיימר בפעילות
+const resetTimer = () => {
     if (auth.currentUser) localStorage.setItem('lastActiveTime', Date.now());
-});
-window.addEventListener('keydown', () => {
-    if (auth.currentUser) localStorage.setItem('lastActiveTime', Date.now());
-});
+};
+window.addEventListener('mousedown', resetTimer);
+window.addEventListener('keydown', resetTimer);
 
 function startApp() {
     populateMonths();
@@ -110,6 +104,8 @@ function startApp() {
         console.error("Firebase Error:", error);
     });
 }
+
+// --- כל שאר הפונקציות שלך ללא שינוי ---
 
 function populateMonths() {
     const filter = document.getElementById('month-filter');
