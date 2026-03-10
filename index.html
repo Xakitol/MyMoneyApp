@@ -128,15 +128,15 @@
       <div class="table-wrapper">
         <table>
           <thead>
-            <tr>
-              <th>תיאור</th>
-              <th>קטגוריה</th>
-              <th>סוג</th>
-              <th>סכום</th>
-              <th>תאריך</th>
-              <th>פעולה</th>
-            </tr>
-          </thead>
+  <tr>
+    <th onclick="sortTable('description')" style="cursor:pointer">תיאור ↕</th>
+    <th onclick="sortTable('category')" style="cursor:pointer">קטגוריה ↕</th>
+    <th onclick="sortTable('type')" style="cursor:pointer">סוג ↕</th>
+    <th onclick="sortTable('amount')" style="cursor:pointer">סכום ↕</th>
+    <th onclick="sortTable('date')" style="cursor:pointer">תאריך ↕</th>
+    <th>פעולה</th>
+  </tr>
+</thead>
           <tbody id="transactions-body"></tbody>
         </table>
       </div>

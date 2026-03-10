@@ -298,6 +298,27 @@ function updateAutocomplete(data) {
     const uniqueNames = [...new Set(data.map(t => t.description))];
     list.innerHTML = uniqueNames.map(name => `<option value="${name}">`).join('');
 }
+let sortDirection = true; // true = עולה, false = יורד
 
+window.sortTable = (key) => {
+    sortDirection = !sortDirection;
+    
+    allData.sort((a, b) => {
+        let valA = a[key];
+        let valB = b[key];
+
+        // טיפול במקרה של טקסט (א'-ב')
+        if (typeof valA === 'string') {
+            return sortDirection 
+                ? valA.localeCompare(valB, 'he') 
+                : valB.localeCompare(valA, 'he');
+        }
+        
+        // טיפול במספרים ותאריכים
+        return sortDirection ? valA - valB : valB - valA;
+    });
+
+    renderUI(allData); // רינדור מחדש של הטבלה הממוינת
+};
 // הפעלה
 init();
