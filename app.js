@@ -41,10 +41,10 @@ window.closeModal = (id) => {
     }
 };
 
-window.openVisionHub = () => openModal('modal-vision-hub');
+window.openFinlyInsights = () => openModal('modal-finly-insights');
 
 window.showSpecificChart = (type) => {
-    closeModal('modal-vision-hub');
+    closeModal('modal-finly-insights');
     chartType = type;
     updateChartText(type);
     openModal('modal-single-chart');
@@ -58,13 +58,14 @@ window.showSpecificChart = (type) => {
 
 window.backToHub = () => {
     closeModal('modal-single-chart');
-    openModal('modal-vision-hub');
+    openModal('modal-finly-insights');
 };
 
 function init() {
     populateMonths();
     setupTypeSelector();
     setupCategories();
+    setupModalBackdropClose();
 
     onSnapshot(query(transactionsCol, orderBy("date", "desc")), (snapshot) => {
         allData = [];
@@ -72,6 +73,23 @@ function init() {
             allData.push({ id: docSnap.id, ...docSnap.data() });
         });
         renderUI(allData);
+    });
+}
+
+function setupModalBackdropClose() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+                if (modal.id === 'modal-form') {
+                    document.getElementById('transaction-form').reset();
+                    editId = null;
+                    currentType = 'expense';
+                    updateTypeButtons();
+                }
+            }
+        });
     });
 }
 
@@ -168,56 +186,76 @@ function updateChartText(type) {
     if (!titleEl || !descEl) return;
 
     if (type === 'doughnut') {
-        titleEl.innerText = 'התפלגות הוצאות לפי קטגוריות';
-        descEl.innerText = 'הגרף הזה עוזר לך להבין לאן הכסף שלך הולך בפועל. במקום בלאגן של תנועות, Finly מרכז לך תמונה ברורה של חלוקת ההוצאות כדי שתוכל לזהות במהירות את הקטגוריות הכבדות ביותר.';
+        titleEl.innerText = 'לאן הכסף הולך';
+        descEl.innerText = 'מבט שמראה איך ההוצאות שלך מתחלקות בין הקטגוריות, כדי להבין איפה הכסף מתרכז.';
     }
 
     if (type === 'bar') {
-        titleEl.innerText = 'השוואת הכנסות והוצאות';
-        descEl.innerText = 'הגרף הזה נותן מבט ברור על היחסים בין הכנסות להוצאות לאורך זמן. Finly עוזר לך לזהות פערים, להבין אם אתה שומר על איזון, ולקבל החלטות טובות יותר מתוך מספרים פשוטים וברורים.';
+        titleEl.innerText = 'מצב החודש';
+        descEl.innerText = 'מבט ברור על הכנסות מול הוצאות, כדי לראות את האיזון שלך בצורה פשוטה.';
     }
 
     if (type === 'line') {
-        titleEl.innerText = 'מגמות ושינויים לאורך זמן';
-        descEl.innerText = 'הגרף הזה נועד לחשוף תנועה, לא רק מספרים. Finly עוזר לך לזהות מגמות של עלייה או ירידה, להבין מתי נוצר עומס פיננסי, ולהפוך מידע מפוזר לתובנות שמייצרות סדר.';
+        titleEl.innerText = 'המגמה שלך';
+        descEl.innerText = 'מבט שעוזר לזהות שינוי לאורך זמן ולהבין איך התזרים שלך מתנהג.';
     }
 }
 
 function getMonthlyComparisonData(data) {
-    const months = ["ינו'", "פבר'", "מרץ", "אפר'", "מאי", "יוני", "יולי", "אוג'", "ספט'", "אוק'", "נוב'", "דצמ'"];
-    const incomeByMonth = new Array(12).fill(0);
-    const expenseByMonth = new Array(12).fill(0);
+    const grouped = {};
 
     data.forEach(t => {
-        const monthIndex = new Date(t.date).getMonth();
+        const date = new Date(t.date);
+        const key = `${date.getFullYear()}-${date.getMonth()}`;
+        if (!grouped[key]) {
+            grouped[key] = {
+                label: `${date.toLocaleDateString('he-IL', { month: 'short' })} ${date.getFullYear()}`,
+                income: 0,
+                expense: 0,
+                time: new Date(date.getFullYear(), date.getMonth(), 1).getTime()
+            };
+        }
+
         if (t.type === 'income') {
-            incomeByMonth[monthIndex] += t.amount;
+            grouped[key].income += t.amount;
         } else {
-            expenseByMonth[monthIndex] += t.amount;
+            grouped[key].expense += t.amount;
         }
     });
 
+    const sorted = Object.values(grouped).sort((a, b) => a.time - b.time);
+
     return {
-        labels: months,
-        incomeData: incomeByMonth,
-        expenseData: expenseByMonth
+        labels: sorted.map(item => item.label),
+        incomeData: sorted.map(item => item.income),
+        expenseData: sorted.map(item => item.expense)
     };
 }
 
 function getExpenseTrendData(data) {
-    const months = ["ינו'", "פבר'", "מרץ", "אפר'", "מאי", "יוני", "יולי", "אוג'", "ספט'", "אוק'", "נוב'", "דצמ'"];
-    const expenseByMonth = new Array(12).fill(0);
+    const grouped = {};
 
     data.forEach(t => {
-        if (t.type === 'expense') {
-            const monthIndex = new Date(t.date).getMonth();
-            expenseByMonth[monthIndex] += t.amount;
+        if (t.type !== 'expense') return;
+
+        const date = new Date(t.date);
+        const key = `${date.getFullYear()}-${date.getMonth()}`;
+        if (!grouped[key]) {
+            grouped[key] = {
+                label: `${date.toLocaleDateString('he-IL', { month: 'short' })} ${date.getFullYear()}`,
+                total: 0,
+                time: new Date(date.getFullYear(), date.getMonth(), 1).getTime()
+            };
         }
+
+        grouped[key].total += t.amount;
     });
 
+    const sorted = Object.values(grouped).sort((a, b) => a.time - b.time);
+
     return {
-        labels: months,
-        expenseData: expenseByMonth
+        labels: sorted.map(item => item.label),
+        expenseData: sorted.map(item => item.total)
     };
 }
 
@@ -240,7 +278,7 @@ function renderChart(filteredData, totals, details) {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'התפלגות הוצאות',
+                    label: 'קטגוריות הוצאה',
                     data: dataValues,
                     backgroundColor: backgroundColors,
                     borderColor: '#ffffff',
@@ -282,6 +320,7 @@ function renderChart(filteredData, totals, details) {
 
     if (chartType === 'bar') {
         const monthlyData = getMonthlyComparisonData(filteredData);
+        if (monthlyData.labels.length === 0) return;
 
         myChart = new Chart(ctx, {
             type: 'bar',
@@ -309,6 +348,7 @@ function renderChart(filteredData, totals, details) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                locale: 'he-IL',
                 plugins: {
                     legend: {
                         display: true,
@@ -331,10 +371,16 @@ function renderChart(filteredData, totals, details) {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        position: 'right'
+                        position: 'right',
+                        ticks: {
+                            callback: (value) => `₪${value.toLocaleString()}`
+                        }
                     },
                     x: {
-                        reverse: false
+                        ticks: {
+                            maxRotation: 0,
+                            minRotation: 0
+                        }
                     }
                 }
             }
@@ -345,13 +391,14 @@ function renderChart(filteredData, totals, details) {
 
     if (chartType === 'line') {
         const trendData = getExpenseTrendData(filteredData);
+        if (trendData.labels.length === 0) return;
 
         myChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: trendData.labels,
                 datasets: [{
-                    label: 'מגמת הוצאות',
+                    label: 'הוצאות',
                     data: trendData.expenseData,
                     borderColor: '#00c2cb',
                     backgroundColor: 'rgba(0, 194, 203, 0.18)',
@@ -366,6 +413,7 @@ function renderChart(filteredData, totals, details) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                locale: 'he-IL',
                 plugins: {
                     legend: {
                         display: true,
@@ -388,10 +436,16 @@ function renderChart(filteredData, totals, details) {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        position: 'right'
+                        position: 'right',
+                        ticks: {
+                            callback: (value) => `₪${value.toLocaleString()}`
+                        }
                     },
                     x: {
-                        reverse: false
+                        ticks: {
+                            maxRotation: 0,
+                            minRotation: 0
+                        }
                     }
                 }
             }

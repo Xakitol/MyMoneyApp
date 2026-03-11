@@ -33,6 +33,12 @@ header {
     z-index: 100;
 }
 
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .brand-name {
     font-size: 2rem !important;
     font-weight: 800;
@@ -44,8 +50,8 @@ header {
 }
 
 .brand-tagline {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.95rem;
     margin-right: 10px;
     border-right: 1px solid rgba(255,255,255,0.2);
     padding-right: 10px;
@@ -58,6 +64,11 @@ header {
     padding: 8px 15px;
     border-radius: 12px;
     cursor: pointer;
+    font-family: inherit;
+}
+
+.month-select option {
+    color: #111827;
 }
 
 .dashboard-layout {
@@ -89,7 +100,7 @@ header {
     color: var(--more-navy);
 }
 
-.vision-grid {
+.finly-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 30px;
@@ -103,7 +114,7 @@ header {
     padding: 40px 20px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.35s ease;
     box-shadow: var(--card-shadow);
     border: 1px solid var(--glass-border);
     border-bottom: 5px solid var(--more-teal);
@@ -159,20 +170,20 @@ header {
     max-width: 1000px;
 }
 
-.vision-overlay {
+.finly-overlay {
     backdrop-filter: blur(25px);
     background: rgba(0, 45, 75, 0.35);
 }
 
-.vision-content {
+.finly-insights-content {
     text-align: center;
     width: 100%;
 }
 
-.vision-title {
+.finly-insights-title {
     color: white;
     font-size: 3rem;
-    margin-bottom: 50px;
+    margin-bottom: 18px;
     font-weight: 800;
 }
 
@@ -181,6 +192,7 @@ header {
     justify-content: center;
     gap: 40px;
     flex-wrap: wrap;
+    margin-top: 30px;
 }
 
 .chart-option-box {
@@ -188,7 +200,7 @@ header {
     padding: 40px 30px;
     border-radius: 40px;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.35s ease;
     width: 240px;
     min-height: 260px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
@@ -196,11 +208,12 @@ header {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
+    border: 1px solid rgba(255,255,255,0.6);
 }
 
 .chart-option-box:hover {
-    transform: scale(1.05) rotate(1deg);
-    box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.22);
 }
 
 .preview-icon {
@@ -269,6 +282,7 @@ header {
     cursor: pointer;
     font-weight: 600;
     transition: 0.3s;
+    font-family: inherit;
 }
 
 .type-selector button.active#type-btn-expense {
@@ -304,6 +318,11 @@ input, select {
     font-weight: 700;
     cursor: pointer;
     transition: 0.3s;
+    font-family: inherit;
+}
+
+.submit-btn:hover {
+    opacity: 0.94;
 }
 
 .table-wrapper {
@@ -341,14 +360,14 @@ th {
     filter: drop-shadow(0 15px 30px rgba(0,0,0,0.2));
 }
 
-.close, .close-vision, .close-btn {
+.close, .close-insights, .close-btn {
     position: absolute;
     cursor: pointer;
     border: none;
     background: none;
 }
 
-.close-vision {
+.close-insights {
     top: 30px;
     right: 40px;
     font-size: 40px;
@@ -372,7 +391,7 @@ th {
 
 @media (max-width: 1100px) {
     .summary-row,
-    .vision-grid {
+    .finly-grid {
         grid-template-columns: 1fr;
     }
 
@@ -389,7 +408,7 @@ th {
         font-size: 1.6rem;
     }
 
-    .vision-title {
+    .finly-insights-title {
         font-size: 2.2rem;
     }
 }

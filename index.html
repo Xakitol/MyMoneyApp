@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finly Vision | ניהול פיננסי חכם</title>
+    <title>Finly | ניהול פיננסי חכם</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,7 +14,7 @@
             <div class="logo-area">
                 <span class="logo-icon">💎</span>
                 <h1 class="brand-name">Finly</h1>
-                <span class="brand-tagline">| Smart Finance</span>
+                <span class="brand-tagline">| עושה סדר בכסף שלך</span>
             </div>
         </div>
         <div class="header-left">
@@ -38,7 +38,7 @@
             </div>
         </section>
 
-        <section class="main-grid vision-grid">
+        <section class="main-grid finly-grid">
             <div class="action-card" onclick="openModal('modal-form')">
                 <div class="icon-box">+</div>
                 <h3>הוספת תנועה</h3>
@@ -51,53 +51,53 @@
                 <p>ניהול היסטוריה</p>
             </div>
 
-            <div class="action-card" onclick="openVisionHub()">
+            <div class="action-card" onclick="openFinlyInsights()">
                 <div class="icon-box">📊</div>
-                <h3>ניתוח נתונים</h3>
-                <p>צפייה בגרפים ופילוחים</p>
+                <h3>תמונת מצב פיננסית ידידותית</h3>
+                <p>להבין את הכסף שלך בצורה פשוטה יותר</p>
             </div>
         </section>
     </main>
 
-    <div id="modal-vision-hub" class="modal vision-overlay">
-        <div class="vision-content">
-            <span class="close-vision" onclick="closeModal('modal-vision-hub')">&times;</span>
-            <h2 class="vision-title">מה ננתח הפעם?</h2>
+    <div id="modal-finly-insights" class="modal finly-overlay">
+        <div class="finly-insights-content">
+            <span class="close-insights" onclick="closeModal('modal-finly-insights')">&times;</span>
+            <h2 class="finly-insights-title">איזה מבט יעזור לך עכשיו?</h2>
 
             <div class="charts-options-container">
                 <div class="chart-option-box" onclick="showSpecificChart('doughnut')">
                     <div class="preview-icon">⭕</div>
-                    <h3>גרף עוגה</h3>
+                    <h3>לאן הכסף הולך</h3>
                     <p class="chart-option-description">
-                        מציג איך ההוצאות שלך מתחלקות בין הקטגוריות השונות, כדי להבין מיד לאן רוב הכסף הולך.
+                        לראות איך ההוצאות שלך מתחלקות, כדי להבין איפה הכסף מתרכז.
                     </p>
                 </div>
 
                 <div class="chart-option-box" onclick="showSpecificChart('bar')">
                     <div class="preview-icon">📊</div>
-                    <h3>גרף עמודות</h3>
+                    <h3>מצב החודש</h3>
                     <p class="chart-option-description">
-                        מאפשר להשוות בצורה ברורה בין הכנסות להוצאות, ולזהות במהירות פערים וקטגוריות בולטות.
+                        להשוות בין הכנסות להוצאות ולקבל תמונה ברורה של האיזון שלך.
                     </p>
                 </div>
 
                 <div class="chart-option-box" onclick="showSpecificChart('line')">
                     <div class="preview-icon">📈</div>
-                    <h3>מגמת הוצאות</h3>
+                    <h3>המגמה שלך</h3>
                     <p class="chart-option-description">
-                        עוזר לראות שינוי לאורך זמן, לזהות עליות וירידות, ולהסיק מסקנות שמכניסות סדר לבלאגן הפיננסי.
+                        לזהות שינויים לאורך זמן ולהבין איך התזרים שלך מתנהג.
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="modal-single-chart" class="modal vision-overlay">
+    <div id="modal-single-chart" class="modal finly-overlay">
         <div class="modal-content chart-display-area" style="width: 90%; max-width: 950px; min-height: 620px; position: relative;">
             <button class="close-btn" onclick="backToHub()">✖</button>
 
             <div class="chart-header">
-                <h2 id="chart-main-title">ניתוח חכם</h2>
+                <h2 id="chart-main-title">גרף</h2>
                 <p id="chart-main-description"></p>
             </div>
 
@@ -116,7 +116,6 @@
                     <button type="button" id="type-btn-expense" class="active">הוצאה</button>
                     <button type="button" id="type-btn-income">הכנסה</button>
                 </div>
-
                 <input type="text" id="transaction-name" placeholder="תיאור" required>
                 <input type="number" id="transaction-amount" placeholder="סכום ב-₪" required>
                 <select id="transaction-category" required></select>
