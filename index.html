@@ -38,6 +38,36 @@
             </div>
         </section>
 
+        <section class="savings-section">
+            <div class="savings-card">
+                <div class="savings-card-header">
+                    <button class="savings-trigger" onclick="openModal('modal-savings-goal')" aria-label="פיינלי חוסך">
+                        <span class="savings-trigger-v">V</span>
+                    </button>
+                    <div class="savings-text">
+                        <h3>פיינלי חוסך</h3>
+                        <p>קובעים יעד, עוקבים אחרי ההתקדמות, ועושים סדר גם בחיסכון.</p>
+                    </div>
+                </div>
+
+                <div id="savings-progress-area" class="savings-progress-area hidden">
+                    <div class="savings-progress-top">
+                        <span id="savings-goal-label">יעד חיסכון: ₪0</span>
+                        <span id="savings-progress-label">0%</span>
+                    </div>
+
+                    <div class="savings-progress-bar">
+                        <div id="savings-progress-fill" class="savings-progress-fill"></div>
+                    </div>
+
+                    <div class="savings-progress-bottom">
+                        <span id="savings-current-status">כרגע נחסכו: ₪0</span>
+                        <button class="savings-edit-btn" onclick="openModal('modal-savings-goal')">עריכת יעד</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="main-grid finly-grid">
             <div class="action-card" onclick="openModal('modal-form')">
                 <div class="icon-box">+</div>
@@ -54,7 +84,7 @@
             <div class="action-card" onclick="openFinlyInsights()">
                 <div class="icon-box">📊</div>
                 <h3>תמונת מצב פיננסית ידידותית</h3>
-                <p>להבין את הכסף שלך בצורה פשוטה יותר</p>
+                <p>להבין את הכסף שלך בצורה פשוטה וברורה</p>
             </div>
         </section>
     </main>
@@ -104,6 +134,17 @@
             <div style="width: 100%; height: 440px; padding: 10px 20px 20px;">
                 <canvas id="main-chart"></canvas>
             </div>
+        </div>
+    </div>
+
+    <div id="modal-savings-goal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('modal-savings-goal')">&times;</span>
+            <h2>פיינלי חוסך</h2>
+            <form id="savings-goal-form">
+                <input type="number" id="savings-goal-input" placeholder="מה יעד החיסכון שלך ב-₪?" min="1" required>
+                <button type="submit" class="submit-btn">אישור יעד חיסכון</button>
+            </form>
         </div>
     </div>
 

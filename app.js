@@ -20,6 +20,7 @@ let myChart = null;
 let currentType = 'expense';
 let editId = null;
 let chartType = 'doughnut';
+let savingsGoal = 0;
 
 const chartColors = ['#002d4b', '#00c2cb', '#7d77b1', '#c5a059', '#a5b4fc', '#4ade80', '#fb923c', '#f87171', '#14b8a6', '#8b5cf6', '#eab308'];
 
@@ -66,6 +67,8 @@ function init() {
     setupTypeSelector();
     setupCategories();
     setupModalBackdropClose();
+    setupSavingsGoal();
+    loadSavingsGoal();
 
     onSnapshot(query(transactionsCol, orderBy("date", "desc")), (snapshot) => {
         allData = [];
@@ -91,6 +94,89 @@ function setupModalBackdropClose() {
             }
         });
     });
+}
+
+function setupSavingsGoal() {
+    const savingsForm = document.getElementById('savings-goal-form');
+    const savingsInput = document.getElementById('savings-goal-input');
+
+    if (!savingsForm || !savingsInput) return;
+
+    savingsForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const goalValue = parseFloat(savingsInput.value);
+        if (!goalValue || goalValue <= 0) return;
+
+        savingsGoal = goalValue;
+        localStorage.setItem('finlySavingsGoal', String(savingsGoal));
+        updateSavingsProgress();
+        closeModal('modal-savings-goal');
+    });
+}
+
+function loadSavingsGoal() {
+    const savedGoal = localStorage.getItem('finlySavingsGoal');
+    if (!savedGoal) return;
+
+    const parsedGoal = parseFloat(savedGoal);
+    if (!parsedGoal || parsedGoal <= 0) return;
+
+    savingsGoal = parsedGoal;
+
+    const savingsInput = document.getElementById('savings-goal-input');
+    if (savingsInput) {
+        savingsInput.value = savingsGoal;
+    }
+}
+
+function updateSavingsProgress() {
+    const progressArea = document.getElementById('savings-progress-area');
+    const goalLabel = document.getElementById('savings-goal-label');
+    const progressLabel = document.getElementById('savings-progress-label');
+    const progressFill = document.getElementById('savings-progress-fill');
+    const currentStatus = document.getElementById('savings-current-status');
+
+    if (!progressArea || !goalLabel || !progressLabel || !progressFill || !currentStatus) return;
+
+    if (!savingsGoal || savingsGoal <= 0) {
+        progressArea.classList.add('hidden');
+        return;
+    }
+
+    const balance = calculateCurrentBalance();
+    const savedAmount = Math.max(balance, 0);
+    const progressPercent = Math.min((savedAmount / savingsGoal) * 100, 100);
+
+    goalLabel.innerText = `יעד חיסכון: ₪${savingsGoal.toLocaleString()}`;
+    progressLabel.innerText = `${Math.round(progressPercent)}%`;
+    currentStatus.innerText = `כרגע נחסכו: ₪${savedAmount.toLocaleString()}`;
+    progressFill.style.width = `${progressPercent}%`;
+
+    progressArea.classList.remove('hidden');
+}
+
+function calculateCurrentBalance() {
+    const filterEl = document.getElementById('month-filter');
+    const selMonth = filterEl ? filterEl.value : "all";
+
+    let income = 0;
+    let expense = 0;
+
+    const filtered = allData.filter(t => {
+        const d = new Date(t.date);
+        return (selMonth === "all") || (d.getMonth() == selMonth);
+    });
+
+    filtered.forEach(t => {
+        if (t.type === 'income') {
+            income += t.amount;
+        } else {
+            expense += t.amount;
+        }
+    });
+
+    return income - expense;
 }
 
 function populateMonths() {
@@ -176,6 +262,7 @@ function renderUI(data) {
         balEl.style.color = balance >= 0 ? 'var(--more-navy)' : '#ff5a5f';
     }
 
+    updateSavingsProgress();
     renderChart(filtered, catTotals, detailedList);
 }
 
