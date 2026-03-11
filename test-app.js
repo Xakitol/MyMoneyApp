@@ -21,10 +21,16 @@ let currentType = 'expense';
 let editId = null;
 let chartType = 'doughnut'; 
 
-// --- ניהול מודלים ---
+// --- ניהול מודלים וחלונות קופצים ---
 window.openModal = (id) => {
     const modal = document.getElementById(id);
-    if (modal) modal.classList.add('active');
+    if (modal) {
+        modal.classList.add('active');
+        // מאפשר סגירה בלחיצה על אזור הטשטוש שמחוץ לתוכן
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal(id);
+        };
+    }
 };
 
 window.closeModal = (id) => {
@@ -38,7 +44,7 @@ window.closeModal = (id) => {
     }
 };
 
-// --- לוגיקת ה-Vision (גרפים בפופ-אפ) ---
+// --- ניהול תצוגות גרפים (Vision Hub) ---
 window.openVisionHub = () => openModal('modal-vision-hub');
 
 window.showSpecificChart = (type) => {
@@ -58,7 +64,7 @@ window.backToHub = () => {
     openModal('modal-vision-hub');
 };
 
-// --- טעינה ואתחול ---
+// --- טעינה ראשונית ואתחול מאגר הנתונים ---
 function init() {
     populateMonths();
     setupTypeSelector();
@@ -73,6 +79,7 @@ function init() {
     });
 }
 
+// --- הגדרת מסנן חודשים ---
 function populateMonths() {
     const filter = document.getElementById('month-filter');
     if (!filter || filter.options.length > 0) return;
@@ -92,7 +99,7 @@ function populateMonths() {
     filter.onchange = () => renderUI(allData);
 }
 
-// --- רינדור ממשק ---
+// --- עדכון ממשק המשתמש והנתונים המוצגים ---
 function renderUI(data) {
     const filterEl = document.getElementById('month-filter');
     const selMonth = filterEl ? filterEl.value : "all";
@@ -153,7 +160,7 @@ function renderUI(data) {
     renderChart(catTotals, detailedList);
 }
 
-// --- גרפיקה (Chart.js) - גרסה מתוקנת ללא undefined ---
+// --- יצירת גרפים ועדכון נתונים ויזואליים ---
 function renderChart(totals, details) {
     const canvas = document.getElementById('main-chart') || document.querySelector('#modal-single-chart canvas');
     if (!canvas) return;
@@ -171,7 +178,7 @@ function renderChart(totals, details) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'פירוט הוצאות',
+                label: 'סיכום לפי קטגוריה',
                 data: dataValues,
                 backgroundColor: chartType === 'doughnut' ? colors : colors[1],
                 borderColor: '#ffffff',
@@ -185,21 +192,12 @@ function renderChart(totals, details) {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    display: true,
+                    // הצגת מקרא רק בגרף עוגה למניעת undefined בגרפים אחרים
+                    display: chartType === 'doughnut',
                     position: 'bottom',
                     rtl: true,
                     labels: {
-                        font: { family: 'Rubik' },
-                        generateLabels: (chart) => {
-                            if (chart.config.type === 'doughnut') {
-                                return Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                            }
-                            return [{
-                                text: 'סינון לפי קטגוריה',
-                                fillStyle: colors[1],
-                                datasetIndex: 0
-                            }];
-                        }
+                        font: { family: 'Rubik' }
                     }
                 },
                 tooltip: {
@@ -221,7 +219,7 @@ function renderChart(totals, details) {
     });
 }
 
-// --- פעולות (שמירה, מחיקה, עריכה) ---
+// --- ניהול טופס הוספה/עריכה ושליחה ל-Firebase ---
 const form = document.getElementById('transaction-form');
 if (form) {
     form.onsubmit = async (e) => {
@@ -245,10 +243,12 @@ if (form) {
     };
 }
 
+// --- מחיקת תנועה ---
 window.deleteTransaction = async (id) => {
     if (confirm("למחוק?")) await deleteDoc(doc(db, "transactions", id));
 };
 
+// --- עריכת תנועה קיימת ---
 window.editTransaction = (id) => {
     const t = allData.find(item => item.id === id);
     if (!t) return;
@@ -261,6 +261,7 @@ window.editTransaction = (id) => {
     editId = id;
 };
 
+// --- הגדרת בורר סוג התנועה (הכנסה/הוצאה) ---
 function setupTypeSelector() {
     const expBtn = document.getElementById('type-btn-expense');
     const incBtn = document.getElementById('type-btn-income');
@@ -270,6 +271,7 @@ function setupTypeSelector() {
     }
 }
 
+// --- טעינת רשימת הקטגוריות לתפריט הבחירה ---
 function setupCategories() {
     const cats = ["מזון", "בית", "חינוך", "פנאי", "רכב", "בריאות", "אשראי", "משכורת", "אחר"];
     const catSelect = document.getElementById('transaction-category');
