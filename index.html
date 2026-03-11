@@ -44,11 +44,13 @@
                 <h3>הוספת תנועה</h3>
                 <p>תיעוד הכנסה או הוצאה</p>
             </div>
+
             <div class="action-card" onclick="openModal('modal-table')">
                 <div class="icon-box">☰</div>
                 <h3>רשימת תנועות</h3>
                 <p>ניהול היסטוריה</p>
             </div>
+
             <div class="action-card" onclick="openVisionHub()">
                 <div class="icon-box">📊</div>
                 <h3>ניתוח נתונים</h3>
@@ -61,27 +63,45 @@
         <div class="vision-content">
             <span class="close-vision" onclick="closeModal('modal-vision-hub')">&times;</span>
             <h2 class="vision-title">מה ננתח הפעם?</h2>
+
             <div class="charts-options-container">
                 <div class="chart-option-box" onclick="showSpecificChart('doughnut')">
                     <div class="preview-icon">⭕</div>
-                    <span>גרף עוגה</span>
+                    <h3>גרף עוגה</h3>
+                    <p class="chart-option-description">
+                        מציג איך ההוצאות שלך מתחלקות בין הקטגוריות השונות, כדי להבין מיד לאן רוב הכסף הולך.
+                    </p>
                 </div>
+
                 <div class="chart-option-box" onclick="showSpecificChart('bar')">
                     <div class="preview-icon">📊</div>
-                    <span>גרף עמודות</span>
+                    <h3>גרף עמודות</h3>
+                    <p class="chart-option-description">
+                        מאפשר להשוות בצורה ברורה בין הכנסות להוצאות, ולזהות במהירות פערים וקטגוריות בולטות.
+                    </p>
                 </div>
+
                 <div class="chart-option-box" onclick="showSpecificChart('line')">
                     <div class="preview-icon">📈</div>
-                    <span>מגמת הוצאות</span>
+                    <h3>מגמת הוצאות</h3>
+                    <p class="chart-option-description">
+                        עוזר לראות שינוי לאורך זמן, לזהות עליות וירידות, ולהסיק מסקנות שמכניסות סדר לבלאגן הפיננסי.
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="modal-single-chart" class="modal vision-overlay">
-        <div class="modal-content chart-display-area" style="width: 90%; max-width: 800px; height: 500px; position: relative;">
+        <div class="modal-content chart-display-area" style="width: 90%; max-width: 950px; min-height: 620px; position: relative;">
             <button class="close-btn" onclick="backToHub()">✖</button>
-            <div style="width: 100%; height: 100%; padding: 20px;">
+
+            <div class="chart-header">
+                <h2 id="chart-main-title">ניתוח חכם</h2>
+                <p id="chart-main-description"></p>
+            </div>
+
+            <div style="width: 100%; height: 440px; padding: 10px 20px 20px;">
                 <canvas id="main-chart"></canvas>
             </div>
         </div>
@@ -96,6 +116,7 @@
                     <button type="button" id="type-btn-expense" class="active">הוצאה</button>
                     <button type="button" id="type-btn-income">הכנסה</button>
                 </div>
+
                 <input type="text" id="transaction-name" placeholder="תיאור" required>
                 <input type="number" id="transaction-amount" placeholder="סכום ב-₪" required>
                 <select id="transaction-category" required></select>

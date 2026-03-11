@@ -19,9 +19,10 @@ let allData = [];
 let myChart = null;
 let currentType = 'expense';
 let editId = null;
-let chartType = 'doughnut'; 
+let chartType = 'doughnut';
 
-// --- ניהול מודלים ---
+const chartColors = ['#002d4b', '#00c2cb', '#7d77b1', '#c5a059', '#a5b4fc', '#4ade80', '#fb923c', '#f87171', '#14b8a6', '#8b5cf6', '#eab308'];
+
 window.openModal = (id) => {
     const modal = document.getElementById(id);
     if (modal) modal.classList.add('active');
@@ -34,21 +35,23 @@ window.closeModal = (id) => {
         if (id === 'modal-form') {
             document.getElementById('transaction-form').reset();
             editId = null;
+            currentType = 'expense';
+            updateTypeButtons();
         }
     }
 };
 
-// --- לוגיקת ה-Vision (גרפים בפופ-אפ) ---
 window.openVisionHub = () => openModal('modal-vision-hub');
 
 window.showSpecificChart = (type) => {
     closeModal('modal-vision-hub');
     chartType = type;
+    updateChartText(type);
     openModal('modal-single-chart');
-    
+
     setTimeout(() => {
         if (allData.length > 0) {
-            renderUI(allData); 
+            renderUI(allData);
         }
     }, 300);
 };
@@ -58,12 +61,11 @@ window.backToHub = () => {
     openModal('modal-vision-hub');
 };
 
-// --- טעינה ואתחול ---
 function init() {
     populateMonths();
     setupTypeSelector();
     setupCategories();
-    
+
     onSnapshot(query(transactionsCol, orderBy("date", "desc")), (snapshot) => {
         allData = [];
         snapshot.forEach(docSnap => {
@@ -76,32 +78,37 @@ function init() {
 function populateMonths() {
     const filter = document.getElementById('month-filter');
     if (!filter || filter.options.length > 0) return;
+
     const months = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
     const currentMonth = new Date().getMonth();
-    
+
     let optAll = document.createElement('option');
-    optAll.value = "all"; optAll.innerText = "הכל מהתחלה";
+    optAll.value = "all";
+    optAll.innerText = "הכל מהתחלה";
     filter.appendChild(optAll);
-    
+
     months.forEach((m, i) => {
         let opt = document.createElement('option');
-        opt.value = i; opt.innerText = m;
+        opt.value = i;
+        opt.innerText = m;
         if (i === currentMonth) opt.selected = true;
         filter.appendChild(opt);
     });
+
     filter.onchange = () => renderUI(allData);
 }
 
-// --- רינדור ממשק ---
 function renderUI(data) {
     const filterEl = document.getElementById('month-filter');
     const selMonth = filterEl ? filterEl.value : "all";
     const tbody = document.getElementById('transactions-body');
-    
+
     if (tbody) tbody.innerHTML = '';
-    let inc = 0, exp = 0;
+
+    let inc = 0;
+    let exp = 0;
     const catTotals = {};
-    const detailedList = {}; 
+    const detailedList = {};
 
     const filtered = data.filter(t => {
         const d = new Date(t.date);
@@ -144,96 +151,270 @@ function renderUI(data) {
 
     if (incEl) incEl.innerText = `₪${inc.toLocaleString()}`;
     if (expEl) expEl.innerText = `₪${exp.toLocaleString()}`;
+
     if (balEl) {
         const balance = inc - exp;
         balEl.innerText = `₪${balance.toLocaleString()}`;
         balEl.style.color = balance >= 0 ? 'var(--more-navy)' : '#ff5a5f';
     }
 
-    renderChart(catTotals, detailedList);
+    renderChart(filtered, catTotals, detailedList);
 }
 
-// --- גרפיקה (Chart.js) - גרסה מתוקנת ללא undefined ---
-function renderChart(totals, details) {
+function updateChartText(type) {
+    const titleEl = document.getElementById('chart-main-title');
+    const descEl = document.getElementById('chart-main-description');
+
+    if (!titleEl || !descEl) return;
+
+    if (type === 'doughnut') {
+        titleEl.innerText = 'התפלגות הוצאות לפי קטגוריות';
+        descEl.innerText = 'הגרף הזה עוזר לך להבין לאן הכסף שלך הולך בפועל. במקום בלאגן של תנועות, Finly מרכז לך תמונה ברורה של חלוקת ההוצאות כדי שתוכל לזהות במהירות את הקטגוריות הכבדות ביותר.';
+    }
+
+    if (type === 'bar') {
+        titleEl.innerText = 'השוואת הכנסות והוצאות';
+        descEl.innerText = 'הגרף הזה נותן מבט ברור על היחסים בין הכנסות להוצאות לאורך זמן. Finly עוזר לך לזהות פערים, להבין אם אתה שומר על איזון, ולקבל החלטות טובות יותר מתוך מספרים פשוטים וברורים.';
+    }
+
+    if (type === 'line') {
+        titleEl.innerText = 'מגמות ושינויים לאורך זמן';
+        descEl.innerText = 'הגרף הזה נועד לחשוף תנועה, לא רק מספרים. Finly עוזר לך לזהות מגמות של עלייה או ירידה, להבין מתי נוצר עומס פיננסי, ולהפוך מידע מפוזר לתובנות שמייצרות סדר.';
+    }
+}
+
+function getMonthlyComparisonData(data) {
+    const months = ["ינו'", "פבר'", "מרץ", "אפר'", "מאי", "יוני", "יולי", "אוג'", "ספט'", "אוק'", "נוב'", "דצמ'"];
+    const incomeByMonth = new Array(12).fill(0);
+    const expenseByMonth = new Array(12).fill(0);
+
+    data.forEach(t => {
+        const monthIndex = new Date(t.date).getMonth();
+        if (t.type === 'income') {
+            incomeByMonth[monthIndex] += t.amount;
+        } else {
+            expenseByMonth[monthIndex] += t.amount;
+        }
+    });
+
+    return {
+        labels: months,
+        incomeData: incomeByMonth,
+        expenseData: expenseByMonth
+    };
+}
+
+function getExpenseTrendData(data) {
+    const months = ["ינו'", "פבר'", "מרץ", "אפר'", "מאי", "יוני", "יולי", "אוג'", "ספט'", "אוק'", "נוב'", "דצמ'"];
+    const expenseByMonth = new Array(12).fill(0);
+
+    data.forEach(t => {
+        if (t.type === 'expense') {
+            const monthIndex = new Date(t.date).getMonth();
+            expenseByMonth[monthIndex] += t.amount;
+        }
+    });
+
+    return {
+        labels: months,
+        expenseData: expenseByMonth
+    };
+}
+
+function renderChart(filteredData, totals, details) {
     const canvas = document.getElementById('main-chart') || document.querySelector('#modal-single-chart canvas');
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (myChart) myChart.destroy();
-    if (Object.keys(totals).length === 0) return;
 
-    const labels = Object.keys(totals);
-    const dataValues = Object.values(totals);
-    const colors = ['#002d4b', '#00c2cb', '#7d77b1', '#c5a059', '#a5b4fc', '#4ade80', '#fb923c'];
+    if (chartType === 'doughnut') {
+        if (Object.keys(totals).length === 0) return;
 
-    myChart = new Chart(ctx, {
-        type: chartType,
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'פירוט הוצאות',
-                data: dataValues,
-                backgroundColor: chartType === 'doughnut' ? colors : colors[1],
-                borderColor: '#ffffff',
-                borderWidth: 2,
-                fill: chartType === 'line'
-            }]
-        },
-        options: {
-            cutout: chartType === 'doughnut' ? '70%' : 0,
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                    rtl: true,
-                    labels: {
-                        font: { family: 'Rubik' },
-                        generateLabels: (chart) => {
-                            if (chart.config.type === 'doughnut') {
-                                return Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                            }
-                            return [{
-                                text: 'סינון לפי קטגוריה',
-                                fillStyle: colors[1],
-                                datasetIndex: 0
-                            }];
+        const labels = Object.keys(totals);
+        const dataValues = Object.values(totals);
+        const backgroundColors = labels.map((_, index) => chartColors[index % chartColors.length]);
+
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'התפלגות הוצאות',
+                    data: dataValues,
+                    backgroundColor: backgroundColors,
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                cutout: '70%',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        rtl: true,
+                        labels: {
+                            font: { family: 'Rubik' },
+                            padding: 18,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
                         }
-                    }
-                },
-                tooltip: {
-                    rtl: true,
-                    callbacks: {
-                        label: (ctx) => ` סה"כ: ₪${ctx.raw.toLocaleString()}`,
-                        afterBody: (ctx) => {
-                            const cat = ctx[0].label;
-                            return details[cat] ? ["", "פירוט:", ...details[cat]] : [];
+                    },
+                    tooltip: {
+                        rtl: true,
+                        callbacks: {
+                            label: (ctx) => `${ctx.label}: ₪${ctx.raw.toLocaleString()}`,
+                            afterBody: (ctx) => {
+                                const cat = ctx[0].label;
+                                return details[cat] ? ["", "פירוט:", ...details[cat]] : [];
+                            }
                         }
                     }
                 }
+            }
+        });
+
+        return;
+    }
+
+    if (chartType === 'bar') {
+        const monthlyData = getMonthlyComparisonData(filteredData);
+
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: monthlyData.labels,
+                datasets: [
+                    {
+                        label: 'הכנסות',
+                        data: monthlyData.incomeData,
+                        backgroundColor: '#00c2cb',
+                        borderColor: '#00c2cb',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    },
+                    {
+                        label: 'הוצאות',
+                        data: monthlyData.expenseData,
+                        backgroundColor: '#7d77b1',
+                        borderColor: '#7d77b1',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }
+                ]
             },
-            scales: chartType !== 'doughnut' ? {
-                y: { beginAtZero: true, position: 'right' },
-                x: { reverse: true }
-            } : {}
-        }
-    });
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        rtl: true,
+                        labels: {
+                            font: { family: 'Rubik' },
+                            padding: 18,
+                            usePointStyle: true,
+                            pointStyle: 'rectRounded'
+                        }
+                    },
+                    tooltip: {
+                        rtl: true,
+                        callbacks: {
+                            label: (ctx) => `${ctx.dataset.label}: ₪${ctx.raw.toLocaleString()}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'right'
+                    },
+                    x: {
+                        reverse: false
+                    }
+                }
+            }
+        });
+
+        return;
+    }
+
+    if (chartType === 'line') {
+        const trendData = getExpenseTrendData(filteredData);
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: trendData.labels,
+                datasets: [{
+                    label: 'מגמת הוצאות',
+                    data: trendData.expenseData,
+                    borderColor: '#00c2cb',
+                    backgroundColor: 'rgba(0, 194, 203, 0.18)',
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: '#00c2cb',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        rtl: true,
+                        labels: {
+                            font: { family: 'Rubik' },
+                            padding: 18,
+                            usePointStyle: true,
+                            pointStyle: 'line'
+                        }
+                    },
+                    tooltip: {
+                        rtl: true,
+                        callbacks: {
+                            label: (ctx) => `${ctx.dataset.label}: ₪${ctx.raw.toLocaleString()}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'right'
+                    },
+                    x: {
+                        reverse: false
+                    }
+                }
+            }
+        });
+    }
 }
 
-// --- פעולות (שמירה, מחיקה, עריכה) ---
 const form = document.getElementById('transaction-form');
 if (form) {
     form.onsubmit = async (e) => {
         e.preventDefault();
+
+        const existingTransaction = editId ? allData.find(t => t.id === editId) : null;
+
         const transactionData = {
             description: document.getElementById('transaction-name').value,
             amount: parseFloat(document.getElementById('transaction-amount').value),
             category: document.getElementById('transaction-category').value,
             type: currentType,
             recurring: false,
-            date: editId ? allData.find(t => t.id === editId).date : Date.now()
+            date: existingTransaction ? existingTransaction.date : Date.now()
         };
+
         try {
             if (editId) {
                 await updateDoc(doc(db, "transactions", editId), transactionData);
@@ -241,7 +422,9 @@ if (form) {
                 await addDoc(transactionsCol, transactionData);
             }
             closeModal('modal-form');
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error(e);
+        }
     };
 }
 
@@ -252,32 +435,61 @@ window.deleteTransaction = async (id) => {
 window.editTransaction = (id) => {
     const t = allData.find(item => item.id === id);
     if (!t) return;
+
     closeModal('modal-table');
     openModal('modal-form');
+
     document.getElementById('transaction-name').value = t.description;
     document.getElementById('transaction-amount').value = t.amount;
     document.getElementById('transaction-category').value = t.category;
+
     currentType = t.type;
     editId = id;
+    updateTypeButtons();
 };
 
 function setupTypeSelector() {
     const expBtn = document.getElementById('type-btn-expense');
     const incBtn = document.getElementById('type-btn-income');
+
     if (expBtn && incBtn) {
-        expBtn.onclick = () => { currentType = 'expense'; expBtn.classList.add('active'); incBtn.classList.remove('active'); };
-        incBtn.onclick = () => { currentType = 'income'; incBtn.classList.add('active'); expBtn.classList.remove('active'); };
+        expBtn.onclick = () => {
+            currentType = 'expense';
+            updateTypeButtons();
+        };
+
+        incBtn.onclick = () => {
+            currentType = 'income';
+            updateTypeButtons();
+        };
+    }
+}
+
+function updateTypeButtons() {
+    const expBtn = document.getElementById('type-btn-expense');
+    const incBtn = document.getElementById('type-btn-income');
+
+    if (!expBtn || !incBtn) return;
+
+    if (currentType === 'expense') {
+        expBtn.classList.add('active');
+        incBtn.classList.remove('active');
+    } else {
+        incBtn.classList.add('active');
+        expBtn.classList.remove('active');
     }
 }
 
 function setupCategories() {
     const cats = ["מזון", "בית", "חינוך", "פנאי", "רכב", "בריאות", "אשראי", "משכורת", "אחר"];
     const catSelect = document.getElementById('transaction-category');
+
     if (catSelect) {
         catSelect.innerHTML = '';
         cats.forEach(c => {
             let o = document.createElement('option');
-            o.value = c; o.innerText = c;
+            o.value = c;
+            o.innerText = c;
             catSelect.appendChild(o);
         });
     }
