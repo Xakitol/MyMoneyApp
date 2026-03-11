@@ -21,7 +21,7 @@ let currentType = 'expense';
 let editId = null;
 let chartType = 'doughnut'; 
 
-// --- שליטה במודלים ---
+// --- ניהול מודלים (Vision & Standard) ---
 window.openModal = (id) => {
     const modal = document.getElementById(id);
     if (modal) modal.classList.add('active');
@@ -34,42 +34,37 @@ window.closeModal = (id) => {
         if (id === 'modal-form') {
             document.getElementById('transaction-form').reset();
             editId = null;
-            // החזרת כפתור הוצאה לברירת מחדל
-            if (expBtn) expBtn.click();
         }
     }
 };
 
-// בורר סוג גרף
+// לוגיקת ה-Vision (גרפים בפופ-אפ)
+window.openVisionHub = () => openModal('modal-vision-hub');
+
+window.showSpecificChart = (type) => {
+    closeModal('modal-vision-hub');
+    chartType = type; // מעדכן את סוג הגרף
+    renderUI(allData); // מרנדר מחדש כדי שהגרף ייווצר בתוך ה-Canvas
+    openModal('modal-single-chart');
+};
+
+window.backToHub = () => {
+    closeModal('modal-single-chart');
+    openModal('modal-vision-hub');
+};
+
+// שינוי סוג גרף (פנימי)
 window.changeChartType = (type) => {
     chartType = type;
     renderUI(allData);
 };
 
-// --- לוגיקה לבחירת סוג תנועה בטופס ---
-const expBtn = document.getElementById('type-btn-expense');
-const incBtn = document.getElementById('type-btn-income');
-
-if (expBtn && incBtn) {
-    expBtn.onclick = () => { 
-        currentType = 'expense'; 
-        expBtn.classList.add('active'); 
-        incBtn.classList.remove('active');
-        expBtn.style.opacity = '1'; 
-        incBtn.style.opacity = '0.5'; 
-    };
-    incBtn.onclick = () => { 
-        currentType = 'income'; 
-        incBtn.classList.add('active'); 
-        expBtn.classList.remove('active');
-        incBtn.style.opacity = '1'; 
-        expBtn.style.opacity = '0.5'; 
-    };
-}
-
-// --- טעינת נתונים ---
+// --- טעינה ואתחול ---
 function init() {
     populateMonths();
+    setupTypeSelector();
+    setupCategories();
+    
     onSnapshot(query(transactionsCol, orderBy("date", "desc")), (snapshot) => {
         allData = [];
         snapshot.forEach(docSnap => {
@@ -120,7 +115,6 @@ function renderUI(data) {
         } else {
             exp += t.amount;
             catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
-            
             if (!detailedList[t.category]) detailedList[t.category] = [];
             detailedList[t.category].push(`${t.description}: ₪${t.amount.toLocaleString()}`);
         }
@@ -155,7 +149,7 @@ function renderUI(data) {
     renderChart(catTotals, detailedList);
 }
 
-// --- הגרף החכם ---
+// --- גרפיקה (Chart.js) ---
 function renderChart(totals, details) {
     const canvas = document.getElementById('main-chart');
     if (!canvas) return;
@@ -172,7 +166,7 @@ function renderChart(totals, details) {
                 data: Object.values(totals),
                 backgroundColor: ['#002d4b', '#00c2cb', '#7d77b1', '#c5a059', '#a5b4fc', '#4ade80', '#fb923c'],
                 borderWidth: 2,
-                borderColor: '#f8fbff'
+                borderColor: '#ffffff'
             }]
         },
         options: {
@@ -180,24 +174,14 @@ function renderChart(totals, details) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { 
-                    position: 'bottom', 
-                    rtl: true,
-                    labels: { color: '#002d4b', font: { family: 'Rubik', size: 12 } } 
-                },
+                legend: { position: 'bottom', rtl: true, labels: { font: { family: 'Rubik' } } },
                 tooltip: {
                     rtl: true,
-                    backgroundColor: 'rgba(0, 45, 75, 0.9)',
-                    titleFont: { size: 14, family: 'Rubik' },
-                    bodyFont: { size: 12, family: 'Rubik' },
-                    padding: 12,
                     callbacks: {
-                        label: function(context) {
-                            return ` סה"כ: ₪${context.raw.toLocaleString()}`;
-                        },
-                        afterBody: function(context) {
-                            const category = context[0].label;
-                            return details[category] ? ["", "פירוט תנועות:", ...details[category]] : [];
+                        label: (ctx) => ` סה"כ: ₪${ctx.raw.toLocaleString()}`,
+                        afterBody: (ctx) => {
+                            const cat = ctx[0].label;
+                            return details[cat] ? ["", "פירוט:", ...details[cat]] : [];
                         }
                     }
                 }
@@ -206,7 +190,7 @@ function renderChart(totals, details) {
     });
 }
 
-// --- שמירה ועדכון ---
+// --- פעולות (שמירה, מחיקה, עריכה) ---
 document.getElementById('transaction-form').onsubmit = async (e) => {
     e.preventDefault();
     const transactionData = {
@@ -214,28 +198,22 @@ document.getElementById('transaction-form').onsubmit = async (e) => {
         amount: parseFloat(document.getElementById('transaction-amount').value),
         category: document.getElementById('transaction-category').value,
         type: currentType,
-        recurring: document.getElementById('transaction-recurring').checked,
+        recurring: false, // פשטנו לבינתיים
         date: editId ? allData.find(t => t.id === editId).date : Date.now()
     };
 
     try {
         if (editId) {
             await updateDoc(doc(db, "transactions", editId), transactionData);
-            editId = null;
         } else {
             await addDoc(transactionsCol, transactionData);
         }
         closeModal('modal-form');
-    } catch (error) {
-        console.error("Error saving transaction: ", error);
-        alert("שגיאה בשמירת הנתונים");
-    }
+    } catch (e) { console.error(e); }
 };
 
 window.deleteTransaction = async (id) => {
-    if (confirm("האם למחוק את התנועה לצמיתות?")) {
-        await deleteDoc(doc(db, "transactions", id));
-    }
+    if (confirm("למחוק?")) await deleteDoc(doc(db, "transactions", id));
 };
 
 window.editTransaction = (id) => {
@@ -246,60 +224,40 @@ window.editTransaction = (id) => {
     document.getElementById('transaction-name').value = t.description;
     document.getElementById('transaction-amount').value = t.amount;
     document.getElementById('transaction-category').value = t.category;
-    document.getElementById('transaction-recurring').checked = t.recurring || false;
-    
-    if (t.type === 'income') incBtn.click(); else expBtn.click();
+    currentType = t.type;
     editId = id;
 };
 
-// אתחול קטגוריות
-const cats = ["מזון", "בית", "חינוך", "פנאי", "רכב", "בריאות", "אשראי", "משכורת", "אחר"];
-const catSelect = document.getElementById('transaction-category');
-if (catSelect && catSelect.options.length === 0) {
-    cats.forEach(c => {
-        let o = document.createElement('option');
-        o.value = c; o.innerText = c;
-        catSelect.appendChild(o);
-    });
+// --- עזרים (Selectors) ---
+function setupTypeSelector() {
+    const expBtn = document.getElementById('type-btn-expense');
+    const incBtn = document.getElementById('type-btn-income');
+    if (expBtn && incBtn) {
+        expBtn.onclick = () => { currentType = 'expense'; expBtn.classList.add('active'); incBtn.classList.remove('active'); };
+        incBtn.onclick = () => { currentType = 'income'; incBtn.classList.add('active'); expBtn.classList.remove('active'); };
+    }
 }
 
-init();
-// --- לוגיקה לדמות האינטראקטיבית (Finly Mascot) ---
+function setupCategories() {
+    const cats = ["מזון", "בית", "חינוך", "פנאי", "רכב", "בריאות", "אשראי", "משכורת", "אחר"];
+    const catSelect = document.getElementById('transaction-category');
+    if (catSelect) {
+        catSelect.innerHTML = '';
+        cats.forEach(c => {
+            let o = document.createElement('option');
+            o.value = c; o.innerText = c;
+            catSelect.appendChild(o);
+        });
+    }
+}
+
+// אנימציית הדמות
 document.addEventListener('mousemove', (e) => {
-    const mascotContainer = document.getElementById('finly-mascot');
-    if (!mascotContainer) return;
-
-    const mascotImg = mascotContainer.querySelector('.mascot-image');
-    const rect = mascotContainer.getBoundingClientRect();
-    
-    // מציאת מרכז הדמות
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    // חישוב המרחק של העכבר מהמרכז (בטווח של -1 עד 1)
-    const moveX = (e.clientX - centerX) / (window.innerWidth / 2);
-    const moveY = (e.clientY - centerY) / (window.innerHeight / 2);
-
-    // הגדרת עוצמת ההטיה (15 מעלות לכל צד)
-    const rotateY = moveX * 15; 
-    const rotateX = moveY * -15; 
-
-    // החלת התנועה על התמונה
-    mascotImg.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
+    const mascotImg = document.querySelector('.mascot-image');
+    if (!mascotImg) return;
+    const moveX = (e.clientX - window.innerWidth/2) / (window.innerWidth/2);
+    const moveY = (e.clientY - window.innerHeight/2) / (window.innerHeight/2);
+    mascotImg.style.transform = `rotateX(${moveY * -15}deg) rotateY(${moveX * 15}deg) scale(1.05)`;
 });
 
-// פונקציה לפתיחת גרף ספציפי
-window.showSpecificChart = (type) => {
-    // 1. סגור את התפריט הראשי
-    closeModal('modal-charts-hub');
-    // 2. שנה את סוג הגרף
-    window.changeChartType(type);
-    // 3. פתח את הפופ-אפ של הגרף
-    openModal('modal-single-chart');
-};
-
-// חזרה לתפריט הגרפים
-window.backToHub = () => {
-    closeModal('modal-single-chart');
-    openModal('modal-charts-hub');
-};
+init();
