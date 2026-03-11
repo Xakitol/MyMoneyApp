@@ -67,7 +67,6 @@ header {
     gap: 30px;
 }
 
-/* Summary Row - המרכז החדש */
 .summary-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -85,7 +84,7 @@ header {
 
 .card p { margin: 10px 0 0; font-size: 2.2rem; font-weight: 800; color: var(--more-navy); }
 
-/* Vision Grid - שלוש פעולות שוות */
+/* Vision Grid */
 .vision-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -122,7 +121,7 @@ header {
     font-size: 28px;
 }
 
-/* --- Modals & Vision Overlay --- */
+/* --- Modals --- */
 .modal {
     display: none;
     position: fixed;
@@ -135,15 +134,27 @@ header {
 
 .modal.active { display: flex; }
 
+.modal-content {
+    background: white;
+    padding: 40px;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.modal-content.full-width { max-width: 1000px; }
+
+/* Vision Specific Modals */
 .vision-overlay {
-    backdrop-filter: blur(25px) !important;
-    background: rgba(0, 45, 75, 0.35) !important;
+    backdrop-filter: blur(25px);
+    background: rgba(0, 45, 75, 0.35);
 }
 
 .vision-content { text-align: center; width: 100%; }
 .vision-title { color: white; font-size: 3rem; margin-bottom: 50px; font-weight: 800; }
 
-/* האפקט של הבועות המתנפחות */
 .charts-options-container { display: flex; justify-content: center; gap: 40px; }
 
 .chart-option-box {
@@ -157,33 +168,60 @@ header {
 }
 
 .chart-option-box:hover {
-    transform: scale(1.2) rotate(2deg);
+    transform: scale(1.1) rotate(2deg);
     box-shadow: 0 30px 60px rgba(0,0,0,0.3);
 }
 
 .preview-icon { font-size: 70px; margin-bottom: 20px; }
 
+/* התיקון למודל הגרפים - כדי שלא יהיה ריק */
+.chart-display-area {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Form Elements --- */
+.type-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+.type-selector button {
+    flex: 1; padding: 12px; border: 2px solid #eee; border-radius: 12px;
+    background: white; cursor: pointer; font-weight: 600; transition: 0.3s;
+}
+.type-selector button.active#type-btn-expense { background: #ff5a5f; color: white; border-color: #ff5a5f; }
+.type-selector button.active#type-btn-income { background: var(--more-teal); color: white; border-color: var(--more-teal); }
+
+input, select {
+    width: 100%; padding: 15px; margin-bottom: 15px;
+    border: 2px solid #eee; border-radius: 12px; font-family: inherit;
+    box-sizing: border-box;
+}
+
+.submit-btn {
+    width: 100%; padding: 15px; border: none; border-radius: 12px;
+    background: var(--more-navy); color: white; font-size: 1.1rem;
+    font-weight: 700; cursor: pointer; transition: 0.3s;
+}
+
+/* --- Table Styles --- */
+.table-wrapper { overflow-x: auto; margin-top: 20px; }
+table { width: 100%; border-collapse: collapse; text-align: right; }
+th, td { padding: 15px; border-bottom: 1px solid #eee; }
+th { color: var(--more-navy); font-weight: 700; }
+
 /* --- Mascot --- */
 .finly-mascot-container {
-    position: fixed;
-    bottom: 30px;
-    left: 30px;
-    width: 180px;
-    z-index: 3000;
-    pointer-events: none;
+    position: fixed; bottom: 30px; left: 30px;
+    width: 150px; z-index: 3000; pointer-events: none;
 }
+.mascot-image { width: 100%; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.2)); }
 
-.mascot-image {
-    width: 100%;
-    filter: drop-shadow(0 15px 30px rgba(0,0,0,0.2));
+/* Close Buttons */
+.close, .close-vision, .close-btn {
+    position: absolute; cursor: pointer; border: none; background: none;
 }
-
-/* כפתורי סגירה */
-.close, .close-vision {
-    position: absolute;
-    top: 30px; right: 40px;
-    font-size: 40px; color: white; cursor: pointer;
-    z-index: 2100;
-}
-
-.close { color: var(--more-navy); top: 15px; right: 20px; }
+.close-vision { top: 30px; right: 40px; font-size: 40px; color: white; }
+.close { top: 20px; right: 25px; font-size: 30px; color: var(--more-navy); }
+.close-btn { top: 15px; right: 20px; font-size: 25px; color: var(--more-navy); font-weight: bold; }

@@ -79,16 +79,18 @@
     </div>
 
     <div id="modal-single-chart" class="modal vision-overlay">
-        <div class="modal-content chart-display-area">
-            <span class="close" onclick="backToHub()">×</span>
-            <canvas id="main-chart"></canvas>
+        <div class="modal-content chart-display-area" style="width: 90%; max-width: 800px; height: 500px; position: relative;">
+            <button class="close-btn" onclick="backToHub()">✖</button>
+            <div style="width: 100%; height: 100%; padding: 20px;">
+                <canvas id="main-chart"></canvas>
+            </div>
         </div>
     </div>
 
     <div id="modal-form" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('modal-form')">&times;</span>
-            <h2>הוספת תנועה חדשה</h2>
+            <h2>ניהול תנועה</h2>
             <form id="transaction-form">
                 <div class="type-selector">
                     <button type="button" id="type-btn-expense" class="active">הוצאה</button>
@@ -124,19 +126,10 @@
         </div>
     </div>
 
-    <script type="module" src="test-app.js"></script>
-
     <div class="finly-mascot-container" id="finly-mascot">
         <img src="finly_mascot.png" alt="Finly Mascot" class="mascot-image">
     </div>
-<div id="modal-single-chart" class="modal-overlay">
-    <div class="modal-content" style="width: 90%; max-width: 800px; height: 500px; position: relative;">
-        <button class="close-btn" onclick="backToHub()">✖</button>
-        <div style="width: 100%; height: 100%; padding: 20px;">
-            <canvas id="main-chart"></canvas>
-        </div>
-    </div>
-</div>
 
+    <script type="module" src="test-app.js"></script>
 </body>
 </html>
