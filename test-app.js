@@ -21,7 +21,7 @@ let currentType = 'expense';
 let editId = null;
 let chartType = 'doughnut'; 
 
-// --- ניהול מודלים (Vision & Standard) ---
+// --- ניהול מודלים ---
 window.openModal = (id) => {
     const modal = document.getElementById(id);
     if (modal) modal.classList.add('active');
@@ -38,39 +38,24 @@ window.closeModal = (id) => {
     }
 };
 
-// --- לוגיקת ה-Vision (תיקון פתיחת גרפים) ---
+// --- לוגיקת ה-Vision (גרפים בפופ-אפ) ---
 window.openVisionHub = () => openModal('modal-vision-hub');
 
 window.showSpecificChart = (type) => {
-    // 1. סגור את תפריט הבחירה
     closeModal('modal-vision-hub');
-    
-    // 2. עדכן את סוג הגרף הגלובלי
     chartType = type;
-    
-    // 3. פתח את המודל שמכיל את ה-Canvas
     openModal('modal-single-chart');
     
-    // 4. חשוב: השהיה כדי לוודא שה-Canvas נטען ב-DOM לפני הציור
     setTimeout(() => {
-        // וודא שהנתונים קיימים לפני רינדור
         if (allData.length > 0) {
             renderUI(allData); 
-        } else {
-            console.error("No data available to render chart");
         }
-    }, 250); // השהיה מוגדלת ליתר ביטחון עבור שרתים איטיים
+    }, 300);
 };
 
 window.backToHub = () => {
     closeModal('modal-single-chart');
     openModal('modal-vision-hub');
-};
-
-// שינוי סוג גרף (פנימי)
-window.changeChartType = (type) => {
-    chartType = type;
-    renderUI(allData);
 };
 
 // --- טעינה ואתחול ---
@@ -159,7 +144,6 @@ function renderUI(data) {
 
     if (incEl) incEl.innerText = `₪${inc.toLocaleString()}`;
     if (expEl) expEl.innerText = `₪${exp.toLocaleString()}`;
-    
     if (balEl) {
         const balance = inc - exp;
         balEl.innerText = `₪${balance.toLocaleString()}`;
@@ -169,9 +153,8 @@ function renderUI(data) {
     renderChart(catTotals, detailedList);
 }
 
-// --- גרפיקה (תיקון זיהוי קנבס במודל) ---
+// --- גרפיקה (Chart.js) - גרסה מתוקנת ללא undefined ---
 function renderChart(totals, details) {
-    // ננסה למצוא קנבס במודל הספציפי או בקנבס הכללי
     const canvas = document.getElementById('main-chart') || document.querySelector('#modal-single-chart canvas');
     if (!canvas) return;
     
@@ -179,15 +162,21 @@ function renderChart(totals, details) {
     if (myChart) myChart.destroy();
     if (Object.keys(totals).length === 0) return;
 
+    const labels = Object.keys(totals);
+    const dataValues = Object.values(totals);
+    const colors = ['#002d4b', '#00c2cb', '#7d77b1', '#c5a059', '#a5b4fc', '#4ade80', '#fb923c'];
+
     myChart = new Chart(ctx, {
         type: chartType,
         data: {
-            labels: Object.keys(totals),
+            labels: labels,
             datasets: [{
-                data: Object.values(totals),
-                backgroundColor: ['#002d4b', '#00c2cb', '#7d77b1', '#c5a059', '#a5b4fc', '#4ade80', '#fb923c'],
+                label: 'פירוט הוצאות',
+                data: dataValues,
+                backgroundColor: chartType === 'doughnut' ? colors : colors[1],
+                borderColor: '#ffffff',
                 borderWidth: 2,
-                borderColor: '#ffffff'
+                fill: chartType === 'line'
             }]
         },
         options: {
@@ -195,7 +184,24 @@ function renderChart(totals, details) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom', rtl: true, labels: { font: { family: 'Rubik' } } },
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    rtl: true,
+                    labels: {
+                        font: { family: 'Rubik' },
+                        generateLabels: (chart) => {
+                            if (chart.config.type === 'doughnut') {
+                                return Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                            }
+                            return [{
+                                text: 'סינון לפי קטגוריה',
+                                fillStyle: colors[1],
+                                datasetIndex: 0
+                            }];
+                        }
+                    }
+                },
                 tooltip: {
                     rtl: true,
                     callbacks: {
@@ -206,7 +212,11 @@ function renderChart(totals, details) {
                         }
                     }
                 }
-            }
+            },
+            scales: chartType !== 'doughnut' ? {
+                y: { beginAtZero: true, position: 'right' },
+                x: { reverse: true }
+            } : {}
         }
     });
 }
@@ -224,7 +234,6 @@ if (form) {
             recurring: false,
             date: editId ? allData.find(t => t.id === editId).date : Date.now()
         };
-
         try {
             if (editId) {
                 await updateDoc(doc(db, "transactions", editId), transactionData);
@@ -273,13 +282,5 @@ function setupCategories() {
         });
     }
 }
-
-document.addEventListener('mousemove', (e) => {
-    const mascotImg = document.querySelector('.mascot-image');
-    if (!mascotImg) return;
-    const moveX = (e.clientX - window.innerWidth/2) / (window.innerWidth/2);
-    const moveY = (e.clientY - window.innerHeight/2) / (window.innerHeight/2);
-    mascotImg.style.transform = `rotateX(${moveY * -15}deg) rotateY(${moveX * 15}deg) scale(1.05)`;
-});
 
 init();
