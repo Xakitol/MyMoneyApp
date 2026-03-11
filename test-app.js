@@ -1,7 +1,6 @@
 ﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// הגדרות חיבור ל-Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyDK3oq5I-MHnjYGXkRBfUeYs3vw7zwB0gE",
     authDomain: "mymoneyapp-abb12.firebaseapp.com",
@@ -22,18 +21,10 @@ let currentType = 'expense';
 let editId = null;
 let chartType = 'doughnut'; 
 
-/**
- * ניהול מודלים - פתיחת חלון וסגירה בלחיצה על הרקע
- */
+// --- ניהול מודלים ---
 window.openModal = (id) => {
     const modal = document.getElementById(id);
-    if (modal) {
-        modal.classList.add('active');
-        // מאפשר סגירה בלחיצה על אזור הטשטוש (Overlay)
-        modal.onclick = (e) => {
-            if (e.target === modal) closeModal(id);
-        };
-    }
+    if (modal) modal.classList.add('active');
 };
 
 window.closeModal = (id) => {
@@ -47,9 +38,7 @@ window.closeModal = (id) => {
     }
 };
 
-/**
- * לוגיקת ה-Vision (מרכז הגרפים)
- */
+// --- לוגיקת ה-Vision (גרפים בפופ-אפ) ---
 window.openVisionHub = () => openModal('modal-vision-hub');
 
 window.showSpecificChart = (type) => {
@@ -57,7 +46,6 @@ window.showSpecificChart = (type) => {
     chartType = type;
     openModal('modal-single-chart');
     
-    // השהייה קלה כדי לוודא שה-Canvas מוכן לרינדור
     setTimeout(() => {
         if (allData.length > 0) {
             renderUI(allData); 
@@ -70,15 +58,12 @@ window.backToHub = () => {
     openModal('modal-vision-hub');
 };
 
-/**
- * אתחול האפליקציה וטעינת נתונים מ-Firebase
- */
+// --- טעינה ואתחול ---
 function init() {
     populateMonths();
     setupTypeSelector();
     setupCategories();
     
-    // האזנה לשינויים בבסיס הנתונים בזמן אמת
     onSnapshot(query(transactionsCol, orderBy("date", "desc")), (snapshot) => {
         allData = [];
         snapshot.forEach(docSnap => {
@@ -88,9 +73,6 @@ function init() {
     });
 }
 
-/**
- * יצירת רשימת חודשים למסנן
- */
 function populateMonths() {
     const filter = document.getElementById('month-filter');
     if (!filter || filter.options.length > 0) return;
@@ -110,9 +92,7 @@ function populateMonths() {
     filter.onchange = () => renderUI(allData);
 }
 
-/**
- * עדכון הממשק: טבלה, כרטיסי סיכום וגרפים
- */
+// --- רינדור ממשק ---
 function renderUI(data) {
     const filterEl = document.getElementById('month-filter');
     const selMonth = filterEl ? filterEl.value : "all";
@@ -123,7 +103,6 @@ function renderUI(data) {
     const catTotals = {};
     const detailedList = {}; 
 
-    // סינון נתונים לפי חודש נבחר
     const filtered = data.filter(t => {
         const d = new Date(t.date);
         return (selMonth === "all") || (d.getMonth() == selMonth);
@@ -139,7 +118,6 @@ function renderUI(data) {
             detailedList[t.category].push(`${t.description}: ₪${t.amount.toLocaleString()}`);
         }
 
-        // בניית שורות הטבלה
         if (tbody) {
             const dateStr = new Date(t.date).toLocaleDateString('he-IL');
             const tr = document.createElement('tr');
@@ -160,7 +138,6 @@ function renderUI(data) {
         }
     });
 
-    // עדכון כרטיסי סיכום (יתרה, הכנסות, הוצאות)
     const incEl = document.getElementById('total-income');
     const expEl = document.getElementById('total-expenses');
     const balEl = document.getElementById('balance');
@@ -176,9 +153,7 @@ function renderUI(data) {
     renderChart(catTotals, detailedList);
 }
 
-/**
- * יצירת ועדכון הגרף באמצעות Chart.js
- */
+// --- גרפיקה (Chart.js) - גרסה מתוקנת ללא undefined ---
 function renderChart(totals, details) {
     const canvas = document.getElementById('main-chart') || document.querySelector('#modal-single-chart canvas');
     if (!canvas) return;
@@ -196,7 +171,7 @@ function renderChart(totals, details) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'סיכום לפי קטגוריה',
+                label: 'פירוט הוצאות',
                 data: dataValues,
                 backgroundColor: chartType === 'doughnut' ? colors : colors[1],
                 borderColor: '#ffffff',
@@ -210,11 +185,22 @@ function renderChart(totals, details) {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    // הצגת מקרא רק בגרף עוגה למניעת undefined בגרפי עמודות/קו
-                    display: chartType === 'doughnut',
+                    display: true,
                     position: 'bottom',
                     rtl: true,
-                    labels: { font: { family: 'Rubik' } }
+                    labels: {
+                        font: { family: 'Rubik' },
+                        generateLabels: (chart) => {
+                            if (chart.config.type === 'doughnut') {
+                                return Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                            }
+                            return [{
+                                text: 'סינון לפי קטגוריה',
+                                fillStyle: colors[1],
+                                datasetIndex: 0
+                            }];
+                        }
+                    }
                 },
                 tooltip: {
                     rtl: true,
@@ -235,9 +221,7 @@ function renderChart(totals, details) {
     });
 }
 
-/**
- * טיפול בטופס (שמירת תנועה חדשה או עריכת קיימת)
- */
+// --- פעולות (שמירה, מחיקה, עריכה) ---
 const form = document.getElementById('transaction-form');
 if (form) {
     form.onsubmit = async (e) => {
@@ -257,20 +241,14 @@ if (form) {
                 await addDoc(transactionsCol, transactionData);
             }
             closeModal('modal-form');
-        } catch (e) { console.error("Error saving document: ", e); }
+        } catch (e) { console.error(e); }
     };
 }
 
-/**
- * מחיקת תנועה מ-Firebase
- */
 window.deleteTransaction = async (id) => {
-    if (confirm("האם למחוק תנועה זו?")) await deleteDoc(doc(db, "transactions", id));
+    if (confirm("למחוק?")) await deleteDoc(doc(db, "transactions", id));
 };
 
-/**
- * טעינת נתוני תנועה לטופס לצורך עריכה
- */
 window.editTransaction = (id) => {
     const t = allData.find(item => item.id === id);
     if (!t) return;
@@ -283,9 +261,6 @@ window.editTransaction = (id) => {
     editId = id;
 };
 
-/**
- * הגדרת לוגיקת בחירת סוג (הכנסה/הוצאה) בטופס
- */
 function setupTypeSelector() {
     const expBtn = document.getElementById('type-btn-expense');
     const incBtn = document.getElementById('type-btn-income');
@@ -295,9 +270,6 @@ function setupTypeSelector() {
     }
 }
 
-/**
- * הגדרת קטגוריות ברירת מחדל
- */
 function setupCategories() {
     const cats = ["מזון", "בית", "חינוך", "פנאי", "רכב", "בריאות", "אשראי", "משכורת", "אחר"];
     const catSelect = document.getElementById('transaction-category');
