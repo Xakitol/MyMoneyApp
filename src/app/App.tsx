@@ -13,14 +13,13 @@ import {
   BarChart3,
   List,
   Plus,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
   Moon,
   Sun,
-  Edit
+  Edit,
+  ArrowDownLeft,
+  ArrowUpRight,
+  PiggyBank,
 } from 'lucide-react';
-
 
 export default function App() {
   const [insightsOpen, setInsightsOpen] = useState(false);
@@ -31,14 +30,20 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [savingsGoal, setSavingsGoal] = useState(12000);
 
-  // Background gradient based on mode
-  const backgroundGradient = darkMode 
+  const monthlyIncome = 17704;
+  const monthlyExpenses = 6135.9;
+  const netBalance = 11568.1;
+  const upcomingAmount = 2350;
+  const safeToSpend = netBalance - upcomingAmount;
+  const savingsProgress = Math.min((netBalance / savingsGoal) * 100, 100);
+
+  const backgroundGradient = darkMode
     ? 'linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 50%, #2a1f4a 100%)'
     : 'linear-gradient(135deg, #e0f2fe 0%, #ddd6fe 50%, #fae8ff 100%)';
 
   return (
-    <div 
-      dir="rtl" 
+    <div
+      dir="rtl"
       className="min-h-screen w-full overflow-x-hidden relative animate-in fade-in duration-700"
       style={{
         fontFamily: 'Rubik, sans-serif',
@@ -46,184 +51,263 @@ export default function App() {
       }}
     >
       <StarField darkMode={darkMode} />
-      
-      {/* Header */}
-      <header className="px-8 py-6 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-4">
-          <GlassCard hover={false} className="px-6 py-3 flex items-center gap-3">
-            <select className={`bg-transparent ${darkMode ? 'text-white' : 'text-gray-800'} outline-none cursor-pointer font-medium`}>
-              <option value="march" className="bg-slate-800">מרץ</option>
-              <option value="feb" className="bg-slate-800">פברואר</option>
-              <option value="jan" className="bg-slate-800">ינואר</option>
-            </select>
-            <ChevronDown className={`w-4 h-4 ${darkMode ? 'text-cyan-300' : 'text-violet-600'}`} />
-          </GlassCard>
 
-          {/* Dark Mode Toggle */}
-          <CircularButton 
-            size="md"
-            variant="glass"
-            onClick={() => setDarkMode(!darkMode)}
-          >
-            {darkMode ? (
-              <Sun className="w-5 h-5 text-yellow-300" />
-            ) : (
-              <Moon className="w-5 h-5 text-violet-600" />
-            )}
-          </CircularButton>
-        </div>
+      <div className="relative z-10 mx-auto w-full max-w-md px-4 pb-8 pt-4 sm:px-5">
+        <header className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CircularButton
+              size="sm"
+              variant="glass"
+              onClick={() => setDarkMode(!darkMode)}
+              className="shrink-0"
+            >
+              {darkMode ? (
+                <Sun className="h-4 w-4 text-yellow-300" />
+              ) : (
+                <Moon className="h-4 w-4 text-violet-600" />
+              )}
+            </CircularButton>
 
-        <div className="flex items-center gap-3">
-          <h1 className={`text-4xl font-bold ${darkMode 
-            ? 'bg-gradient-to-r from-cyan-300 via-violet-300 to-purple-300 bg-clip-text text-transparent'
-            : 'bg-gradient-to-r from-violet-600 via-purple-600 to-cyan-600 bg-clip-text text-transparent'
-          }`}>
-            Finly
-          </h1>
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-violet-500 flex items-center justify-center shadow-lg">
-            <Sparkles className="w-6 h-6 text-white" />
+            <GlassCard hover={false} className="px-4 py-2">
+              <div className="flex items-center gap-2">
+                <ChevronDown
+                  className={`h-4 w-4 ${darkMode ? 'text-cyan-300' : 'text-violet-600'}`}
+                />
+                <select
+                  className={`bg-transparent text-sm font-medium outline-none ${
+                    darkMode ? 'text-white' : 'text-gray-800'
+                  }`}
+                >
+                  <option value="march" className="bg-slate-800">
+                    מרץ
+                  </option>
+                  <option value="feb" className="bg-slate-800">
+                    פברואר
+                  </option>
+                  <option value="jan" className="bg-slate-800">
+                    ינואר
+                  </option>
+                </select>
+              </div>
+            </GlassCard>
           </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="px-8 py-6 space-y-6 max-w-[1600px] mx-auto relative z-10">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-6">
-          <GlassCard className="p-8">
-            <div className="text-right space-y-2">
-              <p className={darkMode ? 'text-cyan-300/70' : 'text-cyan-700/80'}>הכנסות חודשיות</p>
-              <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>₪17,704</p>
-            </div>
-          </GlassCard>
-
-          <GlassCard className="p-8">
-            <div className="text-right space-y-2">
-              <p className={darkMode ? 'text-violet-300/70' : 'text-violet-700/80'}>הוצאות חודשיות</p>
-              <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>₪6,135.9</p>
-            </div>
-          </GlassCard>
-
-          <GlassCard className="p-8">
-            <div className="text-right space-y-2">
-              <p className={darkMode ? 'text-purple-300/70' : 'text-purple-700/80'}>יתרה נטו</p>
-              <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>₪11,568.1</p>
-            </div>
-          </GlassCard>
-        </div>
-
-        {/* Finly Saves Card */}
-        <GlassCard className="p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <CircularButton 
-                size="xl"
-                variant="violet"
-                onClick={() => setSavingsGoalOpen(true)}
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <p
+                className={`text-xs ${darkMode ? 'text-cyan-200/70' : 'text-cyan-700/70'}`}
               >
-                <span className="text-white text-3xl font-bold">F</span>
-              </CircularButton>
-              
-              <CircularButton 
-                size="md"
-                variant="glass"
-                onClick={() => setSavingsGoalOpen(true)}
+                המסך הראשי
+              </p>
+              <h1
+                className={`text-2xl font-bold ${
+                  darkMode
+                    ? 'bg-gradient-to-r from-cyan-300 via-violet-300 to-purple-300 bg-clip-text text-transparent'
+                    : 'bg-gradient-to-r from-violet-600 via-purple-600 to-cyan-600 bg-clip-text text-transparent'
+                }`}
               >
-                <Edit className="w-5 h-5 text-violet-300" />
-              </CircularButton>
+                Finly
+              </h1>
             </div>
-            
-            <div className="text-right flex-1 mr-6">
-              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2`}>פיינלי חוסך</h2>
-              <p className={darkMode ? 'text-cyan-200/70' : 'text-cyan-700/80'}>
-                קונגים יעד, עוקבים אחרי ההתקדמות, ועושים סדר גם בחיסכון.
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-violet-500 shadow-lg">
+              <Sparkles className="h-5 w-5 text-white" />
+            </div>
+          </div>
+        </header>
+
+        <main className="space-y-4">
+          <GlassCard className="p-5">
+            <div className="text-right">
+              <p className={`mb-2 text-sm ${darkMode ? 'text-cyan-200/70' : 'text-cyan-700/80'}`}>
+                נשאר לך עד סוף החודש
+              </p>
+
+              <h2 className={`text-4xl font-bold leading-tight ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                ₪{safeToSpend.toLocaleString()}
+              </h2>
+
+              <p className={`mt-2 text-sm ${darkMode ? 'text-white/70' : 'text-gray-700'}`}>
+                אחרי הוצאות צפויות של ₪{upcomingAmount.toLocaleString()}
               </p>
             </div>
-          </div>
 
-          <div className="space-y-3">
-            <div className={`flex justify-between items-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              <p className="text-sm"></p>
-              <p className="font-bold">יעד חיסכון: ₪{savingsGoal.toLocaleString()}</p>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setFormOpen(true)}
+                className="rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-4 text-white shadow-lg transition-all active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  <span className="font-medium">הוסף תנועה</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTableOpen(true)}
+                className={`rounded-2xl border px-4 py-4 transition-all active:scale-[0.98] ${
+                  darkMode
+                    ? 'border-white/20 bg-white/10 text-white'
+                    : 'border-white/40 bg-white/30 text-gray-800'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <List className="h-5 w-5" />
+                  <span className="font-medium">כל התנועות</span>
+                </div>
+              </button>
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-4">
+            <div className="mb-3 text-right">
+              <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                תמונת מצב
+              </h3>
+              <p className={`text-sm ${darkMode ? 'text-cyan-200/60' : 'text-cyan-700/70'}`}>
+                מה נכנס, מה יצא, ומה באמת נשאר
+              </p>
             </div>
 
-            {/* Progress Bar */}
-            <div className="relative h-4 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
-              <div 
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background: 'linear-gradient(90deg, #0f1729 0%, #6366f1 25%, #8b5cf6 50%, #00d4d4 75%, #00e5ff 100%)',
-                  width: '96%',
-                  boxShadow: '0 0 20px rgba(139, 92, 246, 0.6)'
-                }}
-              />
+            <div className="space-y-3">
+              <div
+                className={`flex items-center justify-between rounded-2xl px-4 py-3 ${
+                  darkMode ? 'bg-white/5' : 'bg-white/30'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/20">
+                    <ArrowDownLeft className="h-5 w-5 text-cyan-300" />
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-sm ${darkMode ? 'text-white' : 'text-gray-800'}`}>הכנסות</p>
+                    <p className={`text-xs ${darkMode ? 'text-white/60' : 'text-gray-600'}`}>החודש</p>
+                  </div>
+                </div>
+                <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  ₪{monthlyIncome.toLocaleString()}
+                </p>
+              </div>
+
+              <div
+                className={`flex items-center justify-between rounded-2xl px-4 py-3 ${
+                  darkMode ? 'bg-white/5' : 'bg-white/30'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500/20">
+                    <ArrowUpRight className="h-5 w-5 text-violet-300" />
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-sm ${darkMode ? 'text-white' : 'text-gray-800'}`}>הוצאות</p>
+                    <p className={`text-xs ${darkMode ? 'text-white/60' : 'text-gray-600'}`}>שכבר נרשמו</p>
+                  </div>
+                </div>
+                <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  ₪{monthlyExpenses.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-4">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CircularButton
+                  size="sm"
+                  variant="glass"
+                  onClick={() => setSavingsGoalOpen(true)}
+                  className="shrink-0"
+                >
+                  <Edit className="h-4 w-4 text-violet-300" />
+                </CircularButton>
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-purple-600 shadow-lg">
+                  <PiggyBank className="h-5 w-5 text-white" />
+                </div>
+              </div>
+
+              <div className="flex-1 text-right">
+                <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  יעד חיסכון
+                </h3>
+                <p className={`text-sm ${darkMode ? 'text-cyan-200/60' : 'text-cyan-700/70'}`}>
+                  יעד: ₪{savingsGoal.toLocaleString()}
+                </p>
+              </div>
             </div>
 
-            <div className={`flex justify-between text-sm ${darkMode ? 'text-cyan-200/70' : 'text-cyan-700/80'}`}>
-              <p>כרגע נחסכו: ₪11,568.1</p>
-              <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>96%</p>
-            </div>
-          </div>
-        </GlassCard>
+            <div className="space-y-3">
+              <div className={`flex items-center justify-between text-sm ${darkMode ? 'text-white/70' : 'text-gray-700'}`}>
+                <p>{Math.round(savingsProgress)}%</p>
+                <p>כרגע נחסכו ₪{netBalance.toLocaleString()}</p>
+              </div>
 
-        {/* Feature Cards */}
-        <div className="grid grid-cols-3 gap-6">
-          <GlassCard className="p-10 flex flex-col items-center justify-center text-center space-y-6">
-            <CircularButton 
-              size="lg"
-              variant="glass"
+              <div className="relative h-3 overflow-hidden rounded-full bg-white/10 backdrop-blur-sm">
+                <div
+                  className="absolute inset-y-0 right-0 rounded-full"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, #0f1729 0%, #6366f1 25%, #8b5cf6 50%, #00d4d4 75%, #00e5ff 100%)',
+                    width: `${savingsProgress}%`,
+                    boxShadow: '0 0 20px rgba(139, 92, 246, 0.6)',
+                  }}
+                />
+              </div>
+            </div>
+          </GlassCard>
+
+          <div className="grid grid-cols-2 gap-3">
+            <GlassCard
+              className="p-4 text-center"
               onClick={() => setInsightsOpen(true)}
             >
-              <BarChart3 className={`w-8 h-8 ${darkMode ? 'text-cyan-300' : 'text-cyan-600'}`} />
-            </CircularButton>
-            <div>
-              <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2`}>תמונת מצב פיננסית ידידותית</h3>
-              <p className={darkMode ? 'text-cyan-200/60' : 'text-cyan-700/70'}>לחצו את הכפתור שלך. בצורה פשוטה וברור</p>
-            </div>
-          </GlassCard>
+              <div className="mb-3 flex justify-center">
+                <CircularButton size="sm" variant="glass">
+                  <BarChart3 className={`h-5 w-5 ${darkMode ? 'text-cyan-300' : 'text-cyan-600'}`} />
+                </CircularButton>
+              </div>
+              <h3 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                תובנות
+              </h3>
+              <p className={`mt-1 text-xs ${darkMode ? 'text-cyan-200/60' : 'text-cyan-700/70'}`}>
+                מגמות ומבט מהיר
+              </p>
+            </GlassCard>
 
-          <GlassCard className="p-10 flex flex-col items-center justify-center text-center space-y-6">
-            <CircularButton 
-              size="lg"
-              variant="glass"
+            <GlassCard
+              className="p-4 text-center"
               onClick={() => setTableOpen(true)}
             >
-              <List className={`w-8 h-8 ${darkMode ? 'text-violet-300' : 'text-violet-600'}`} />
-            </CircularButton>
-            <div>
-              <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2`}>רשימת תנועות</h3>
-              <p className={darkMode ? 'text-violet-200/60' : 'text-violet-700/70'}>ניהול ההיסטוריה</p>
-            </div>
-          </GlassCard>
+              <div className="mb-3 flex justify-center">
+                <CircularButton size="sm" variant="glass">
+                  <List className={`h-5 w-5 ${darkMode ? 'text-violet-300' : 'text-violet-600'}`} />
+                </CircularButton>
+              </div>
+              <h3 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                תנועות
+              </h3>
+              <p className={`mt-1 text-xs ${darkMode ? 'text-violet-200/60' : 'text-violet-700/70'}`}>
+                היסטוריה וחיפוש
+              </p>
+            </GlassCard>
+          </div>
+        </main>
+      </div>
 
-          <GlassCard className="p-10 flex flex-col items-center justify-center text-center space-y-6">
-            <CircularButton 
-              size="lg"
-              variant="glass"
-              onClick={() => setFormOpen(true)}
-            >
-              <Plus className={`w-8 h-8 ${darkMode ? 'text-purple-300' : 'text-purple-600'}`} />
-            </CircularButton>
-            <div>
-              <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2`}>הוספת תנועה</h3>
-              <p className={darkMode ? 'text-purple-200/60' : 'text-purple-700/70'}>תיעוד הכנסה או הוצאה</p>
-            </div>
-          </GlassCard>
-        </div>
-      </main>
-
-      {/* Modals */}
-      <InsightsModal 
-        open={insightsOpen} 
-        onClose={() => setInsightsOpen(false)} 
+      <InsightsModal
+        open={insightsOpen}
+        onClose={() => setInsightsOpen(false)}
         onOpenChart={() => setChartOpen(true)}
         darkMode={darkMode}
       />
       <ChartModal open={chartOpen} onClose={() => setChartOpen(false)} darkMode={darkMode} />
       <TransactionFormModal open={formOpen} onClose={() => setFormOpen(false)} darkMode={darkMode} />
       <TransactionTableModal open={tableOpen} onClose={() => setTableOpen(false)} darkMode={darkMode} />
-      <SavingsGoalModal 
-        open={savingsGoalOpen} 
+      <SavingsGoalModal
+        open={savingsGoalOpen}
         onClose={() => setSavingsGoalOpen(false)}
         currentGoal={savingsGoal}
         onSave={setSavingsGoal}
