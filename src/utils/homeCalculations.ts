@@ -1,4 +1,4 @@
-import type { FinanceEntry, HomeMonthData } from '../types/finance';
+import type { FinanceEntry, ForwardViewSummary, HomeMonthData, SavingsProgressSummary } from '../types/finance';
 
 function sumAmounts(entries: FinanceEntry[]) {
   return entries.reduce((sum, entry) => sum + entry.amount, 0);
@@ -78,5 +78,56 @@ export function getHomeSnapshot(data: HomeMonthData) {
     savingsTarget: data.savingsGoal.targetAmount,
     savingsProgress,
     statusLabel: getMonthlyStatus(remaining),
+  };
+}
+
+// ── "פיינלי מביט קדימה" helpers ──────────────────────────────────────────────
+
+/**
+ * Forward-looking summary based only on what is already known:
+ * recorded income/expenses + upcoming obligations.
+ * No predictions. No double-counting.
+ *
+ * @param today  Injected for testability; defaults to now.
+ */
+export function getForwardViewSummary(data: HomeMonthData, today: Date = new Date()): ForwardViewSummary {
+  const upcomingItems = data.entries
+    .filter(
+      (e) =>
+        e.type === 'expense' &&
+        e.status === 'upcoming' &&
+        e.countsTowardRemaining !== false,
+    )
+    .sort((a, b) => new Date(a.dueDate ?? a.date).getTime() - new Date(b.dueDate ?? b.date).getTime());
+
+  const knownUpcomingTotal = sumAmounts(upcomingItems);
+  const nextKnownCharge = upcomingItems[0] ?? null;
+  const nextKnownChargeDate = nextKnownCharge ? (nextKnownCharge.dueDate ?? nextKnownCharge.date) : null;
+
+  // projectedMonthEndRemaining == getRemainingThisMonth — same formula, surfaced
+  // under a forward-view label so callers understand the intent.
+  const projectedMonthEndRemaining = getRemainingThisMonth(data.entries);
+
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const remainingDaysInMonth = Math.max(lastDayOfMonth - today.getDate(), 0);
+
+  return {
+    knownUpcomingTotal,
+    nextKnownCharge,
+    nextKnownChargeDate,
+    projectedMonthEndRemaining,
+    remainingDaysInMonth,
+    upcomingItems,
+  };
+}
+
+export function getSavingsProgressSummary(data: HomeMonthData): SavingsProgressSummary {
+  const { currentAmount, targetAmount } = data.savingsGoal;
+  return {
+    currentAmount,
+    targetAmount,
+    savingsProgressPercent: Math.min((currentAmount / targetAmount) * 100, 100),
+    savingsGap: Math.max(targetAmount - currentAmount, 0),
+    isSavingsGoalMet: currentAmount >= targetAmount,
   };
 }

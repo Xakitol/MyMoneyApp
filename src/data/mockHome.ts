@@ -142,4 +142,50 @@ export const mockHomeData: HomeMonthData = {
     currentAmount: 11568.1,
     targetAmount: 12000,
   },
+  /**
+   * February entries — used only by recurring detection.
+   * Mirrors non-recurring March expenses to trigger candidate suggestions.
+   */
+  previousMonthEntries: [
+    {
+      id: 'feb-expense-supermarket',
+      type: 'expense',
+      amount: 430,
+      date: '2026-02-11',
+      paymentMethod: 'credit',
+      status: 'recorded',
+      recurring: false,
+      source: 'manual',
+      title: 'קניות בסופר',
+      category: 'מזון',
+      countsTowardRemaining: true,
+    },
+    {
+      id: 'feb-expense-gas',
+      type: 'expense',
+      amount: 320,
+      date: '2026-02-09',
+      paymentMethod: 'credit',
+      status: 'recorded',
+      recurring: false,
+      source: 'manual',
+      title: 'דלק',
+      category: 'תחבורה',
+      countsTowardRemaining: true,
+    },
+    {
+      id: 'feb-expense-restaurant',
+      type: 'expense',
+      amount: 255,
+      date: '2026-02-06',
+      paymentMethod: 'credit',
+      status: 'recorded',
+      recurring: false,
+      source: 'manual',
+      title: 'מסעדה',
+      category: 'בילויים',
+      countsTowardRemaining: true,
+    },
+    // Salary and rent were already recurring — not included here intentionally
+  ],
 };

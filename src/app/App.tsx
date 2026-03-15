@@ -7,8 +7,12 @@ import { TransactionTableModal } from './components/modals/TransactionTableModal
 import { StarField } from './components/effects/StarField';
 import { HomeHeader } from './components/home/HomeHeader';
 import { FloatingCirclesHome } from './components/home/FloatingCirclesHome';
+import { ForwardViewCard } from './components/home/ForwardViewCard';
+import { RecurringSuggestionBanner } from './components/home/RecurringSuggestionBanner';
 import { mockHomeData } from '../data/mockHome';
-import { getHomeSnapshot } from '../utils/homeCalculations';
+import { getHomeSnapshot, getForwardViewSummary } from '../utils/homeCalculations';
+import { detectRecurringCandidates } from '../utils/recurringDetection';
+import { DEV_FORCE_SHOW_RECURRING_SUGGESTION } from '../config/devFlags';
 
 
 export default function App() {
@@ -19,6 +23,8 @@ export default function App() {
   const [savingsGoalOpen, setSavingsGoalOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [savingsGoal, setSavingsGoal] = useState(mockHomeData.savingsGoal.targetAmount);
+  const [approvedRecurringIds, setApprovedRecurringIds] = useState<string[]>([]);
+  const [dismissedCandidateIds, setDismissedCandidateIds] = useState<string[]>([]);
 
   const homeData = useMemo(
     () => ({
@@ -27,11 +33,40 @@ export default function App() {
         ...mockHomeData.savingsGoal,
         targetAmount: savingsGoal,
       },
+      // Merge recurring approvals into entries so detection reflects current state
+      entries: mockHomeData.entries.map((e) =>
+        approvedRecurringIds.includes(e.id) ? { ...e, recurring: true } : e,
+      ),
     }),
-    [savingsGoal],
+    [savingsGoal, approvedRecurringIds],
   );
 
   const snapshot = useMemo(() => getHomeSnapshot(homeData), [homeData]);
+
+  const forwardView = useMemo(() => getForwardViewSummary(homeData), [homeData]);
+
+  const recurringCandidates = useMemo(
+    () =>
+      detectRecurringCandidates(
+        homeData.entries,
+        homeData.previousMonthEntries ?? [],
+      ).filter((c) => !dismissedCandidateIds.includes(c.currentEntry.id)),
+    [homeData, dismissedCandidateIds],
+  );
+
+  // In dev: bypass dismissal so the banner stays visible for iteration
+  const activeSuggestion = DEV_FORCE_SHOW_RECURRING_SUGGESTION
+    ? (detectRecurringCandidates(homeData.entries, homeData.previousMonthEntries ?? [])[0] ?? null)
+    : (recurringCandidates[0] ?? null);
+
+  function handleApproveRecurring(id: string) {
+    setApprovedRecurringIds((prev) => [...prev, id]);
+    setDismissedCandidateIds((prev) => [...prev, id]);
+  }
+
+  function handleDismissSuggestion(id: string) {
+    setDismissedCandidateIds((prev) => [...prev, id]);
+  }
 
   const backgroundGradient = darkMode
     ? 'linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 50%, #2a1f4a 100%)'
@@ -60,6 +95,19 @@ export default function App() {
           snapshot={snapshot}
           onAddClick={() => setFormOpen(true)}
         />
+
+        <div className="flex flex-col gap-3 pb-8">
+          {activeSuggestion && (
+            <RecurringSuggestionBanner
+              darkMode={darkMode}
+              candidate={activeSuggestion}
+              onApprove={handleApproveRecurring}
+              onDismiss={handleDismissSuggestion}
+            />
+          )}
+
+          <ForwardViewCard darkMode={darkMode} summary={forwardView} />
+        </div>
       </div>
 
       <InsightsModal
